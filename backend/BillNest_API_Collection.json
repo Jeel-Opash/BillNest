@@ -1,0 +1,358 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "BillNest Multi-Tenant Billing API",
+  "dateExported": "2026-05-28T09:30:00.000Z",
+  "version": "1.1",
+  "folders": [
+    {
+      "_id": "folder_auth",
+      "name": "1. Authentication",
+      "containerId": ""
+    },
+    {
+      "_id": "folder_teammates",
+      "name": "2. Teammate Management",
+      "containerId": ""
+    },
+    {
+      "_id": "folder_clients",
+      "name": "3. Client CRM",
+      "containerId": ""
+    },
+    {
+      "_id": "folder_invoices",
+      "name": "4. Invoices & Billing",
+      "containerId": ""
+    },
+    {
+      "_id": "folder_payments",
+      "name": "5. Stripe Payments",
+      "containerId": ""
+    },
+    {
+      "_id": "folder_dashboard",
+      "name": "6. Dashboard Analytics",
+      "containerId": ""
+    },
+    {
+      "_id": "folder_audit",
+      "name": "7. Tenant Audit Logs",
+      "containerId": ""
+    },
+    {
+      "_id": "folder_keys",
+      "name": "8. Per-Tenant API Keys",
+      "containerId": ""
+    }
+  ],
+  "requests": [
+    {
+      "_id": "req_register",
+      "colId": "billnest_coll",
+      "containerId": "folder_auth",
+      "name": "Register Workspace Tenant",
+      "url": "{{base_url}}/api/auth/register",
+      "method": "POST",
+      "sortNum": 10000,
+      "headers": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"organizationName\": \"PixelFlow Agency\",\n  \"name\": \"Alex Reed\",\n  \"email\": \"alex@pixelflow.com\",\n  \"password\": \"password123\"\n}"
+      }
+    },
+    {
+      "_id": "req_login",
+      "colId": "billnest_coll",
+      "containerId": "folder_auth",
+      "name": "Log In Owner/Member",
+      "url": "{{base_url}}/api/auth/login",
+      "method": "POST",
+      "sortNum": 20000,
+      "headers": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"alex@pixelflow.com\",\n  \"password\": \"password123\"\n}"
+      }
+    },
+    {
+      "_id": "req_refresh",
+      "colId": "billnest_coll",
+      "containerId": "folder_auth",
+      "name": "Rotate JWT Session (Refresh Token)",
+      "url": "{{base_url}}/api/auth/refresh",
+      "method": "POST",
+      "sortNum": 30000,
+      "headers": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+      }
+    },
+    {
+      "_id": "req_invite",
+      "colId": "billnest_coll",
+      "containerId": "folder_teammates",
+      "name": "Invite Teammate via Email",
+      "url": "{{base_url}}/api/auth/invite",
+      "method": "POST",
+      "sortNum": 40000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"teammember@pixelflow.com\",\n  \"role\": \"member\"\n}"
+      }
+    },
+    {
+      "_id": "req_accept_invite",
+      "colId": "billnest_coll",
+      "containerId": "folder_teammates",
+      "name": "Accept Teammate Invite",
+      "url": "{{base_url}}/api/auth/accept-invite",
+      "method": "POST",
+      "sortNum": 50000,
+      "headers": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"token\": \"PUT_INVITATION_TOKEN_HERE\",\n  \"name\": \"Jane Doe\",\n  \"password\": \"securedPassWord99\"\n}"
+      }
+    },
+    {
+      "_id": "req_create_client",
+      "colId": "billnest_coll",
+      "containerId": "folder_clients",
+      "name": "Create Client (Scoped & Limited)",
+      "url": "{{base_url}}/api/clients",
+      "method": "POST",
+      "sortNum": 60000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"name\": \"Acme Corporation Inc.\",\n  \"email\": \"billing@acme.com\",\n  \"company\": \"Acme Corp\",\n  \"phone\": \"+1 (555) 019-2283\",\n  \"taxId\": \"TAX-12345678\",\n  \"address\": \"100 Corporate Way, Austin, TX\",\n  \"currency\": \"USD\"\n}"
+      }
+    },
+    {
+      "_id": "req_get_clients",
+      "colId": "billnest_coll",
+      "containerId": "folder_clients",
+      "name": "Get Isolated Clients",
+      "url": "{{base_url}}/api/clients",
+      "method": "GET",
+      "sortNum": 70000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req_create_invoice",
+      "colId": "billnest_coll",
+      "containerId": "folder_invoices",
+      "name": "Build Draft Invoice",
+      "url": "{{base_url}}/api/invoices",
+      "method": "POST",
+      "sortNum": 80000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"client\": \"PUT_CLIENT_MONGODB_ID_HERE\",\n  \"items\": [\n    {\n      \"name\": \"React Frontend SaaS Dashboard\",\n      \"quantity\": 1,\n      \"price\": 3500\n    },\n    {\n      \"name\": \"Consulting Services\",\n      \"quantity\": 5,\n      \"price\": 120\n    }\n  ],\n  \"taxRate\": 10,\n  \"discountRate\": 5,\n  \"dueDate\": \"2026-06-30T00:00:00.000Z\"\n}"
+      }
+    },
+    {
+      "_id": "req_transition_invoice",
+      "colId": "billnest_coll",
+      "containerId": "folder_invoices",
+      "name": "Transition Invoice Status (Sent/Paid/Void)",
+      "url": "{{base_url}}/api/invoices/PUT_INVOICE_ID_HERE/status",
+      "method": "PATCH",
+      "sortNum": 90000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"status\": \"sent\"\n}"
+      }
+    },
+    {
+      "_id": "req_download_pdf",
+      "colId": "billnest_coll",
+      "containerId": "folder_invoices",
+      "name": "Download PDF Invoice",
+      "url": "{{base_url}}/api/invoices/PUT_INVOICE_ID_HERE/pdf",
+      "method": "GET",
+      "sortNum": 100000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req_send_email",
+      "colId": "billnest_coll",
+      "containerId": "folder_invoices",
+      "name": "Email PDF Invoice to Client",
+      "url": "{{base_url}}/api/invoices/PUT_INVOICE_ID_HERE/send-email",
+      "method": "POST",
+      "sortNum": 110000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req_export_reports",
+      "colId": "billnest_coll",
+      "containerId": "folder_invoices",
+      "name": "Export Report Summary (CSV/PDF)",
+      "url": "{{base_url}}/api/invoices/export?format=csv",
+      "method": "GET",
+      "sortNum": 120000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req_stripe_checkout",
+      "colId": "billnest_coll",
+      "containerId": "folder_payments",
+      "name": "Generate Stripe Payment Session",
+      "url": "{{base_url}}/api/stripe/create-checkout-session",
+      "method": "POST",
+      "sortNum": 130000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"invoiceId\": \"PUT_INVOICE_ID_HERE\"\n}"
+      }
+    },
+    {
+      "_id": "req_stripe_subscription",
+      "colId": "billnest_coll",
+      "containerId": "folder_payments",
+      "name": "Upgrade Subscription Session",
+      "url": "{{base_url}}/api/stripe/create-subscription-session",
+      "method": "POST",
+      "sortNum": 140000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"plan\": \"pro\"\n}"
+      }
+    },
+    {
+      "_id": "req_stripe_webhook",
+      "colId": "billnest_coll",
+      "containerId": "folder_payments",
+      "name": "Simulate Stripe Webhook (Local/Mock)",
+      "url": "{{base_url}}/api/stripe/webhook",
+      "method": "POST",
+      "sortNum": 150000,
+      "headers": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"id\": \"evt_test_payment_succeeded_9921\",\n  \"type\": \"checkout.session.completed\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"cs_test_a19938210\",\n      \"metadata\": {\n        \"type\": \"one_off_invoice\",\n        \"invoiceId\": \"PUT_INVOICE_ID_HERE\",\n        \"organizationId\": \"PUT_ORGANIZATION_ID_HERE\"\n      }\n    }\n  }\n}"
+      }
+    },
+    {
+      "_id": "req_get_dashboard",
+      "colId": "billnest_coll",
+      "containerId": "folder_dashboard",
+      "name": "Retrieve Dashboard Statistics",
+      "url": "{{base_url}}/api/dashboard/stats",
+      "method": "GET",
+      "sortNum": 160000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req_get_audit",
+      "colId": "billnest_coll",
+      "containerId": "folder_audit",
+      "name": "View Tenant Audit Trails",
+      "url": "{{base_url}}/api/auth/audit-logs?limit=25",
+      "method": "GET",
+      "sortNum": 170000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req_create_key",
+      "colId": "billnest_coll",
+      "containerId": "folder_keys",
+      "name": "Generate Per-Tenant API Key",
+      "url": "{{base_url}}/api/auth/api-keys",
+      "method": "POST",
+      "sortNum": 180000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"name\": \"Development Server Integration\"\n}"
+      }
+    },
+    {
+      "_id": "req_get_keys",
+      "colId": "billnest_coll",
+      "containerId": "folder_keys",
+      "name": "List Tenant API Keys",
+      "url": "{{base_url}}/api/auth/api-keys",
+      "method": "GET",
+      "sortNum": 190000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{jwt_token}}"
+        }
+      ]
+    }
+  ]
+}

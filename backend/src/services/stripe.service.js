@@ -117,7 +117,7 @@ class StripeService {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
-        const { invoiceId, organizationId, plan, type } = session.metadata || ;
+        const { invoiceId, organizationId, plan, type } = session.metadata || {};
 
         if (type === "one_off_invoice" && invoiceId && organizationId) {
 

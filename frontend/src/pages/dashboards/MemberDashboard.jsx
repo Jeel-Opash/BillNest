@@ -222,7 +222,7 @@ const MemberDashboard = () => {
                       <div className="flex flex-col gap-1">
                         <button
                           onClick={() => {
-                            setActivePage("profile");
+                            handlePageChange("profile");
                             setIsProfileDropdownOpen(false);
                           }}
                           className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"

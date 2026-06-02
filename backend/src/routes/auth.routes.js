@@ -14,6 +14,20 @@ import {
   getAuditLogs,
   getTeamMembers,
   updateRole,
+  searchOrganizationsController,
+  submitJoinRequestController,
+  getMyJoinRequestsController,
+  getPendingRequestsController,
+  getRequestHistoryController,
+  processJoinRequestController,
+  getAccessCodeController,
+  regenerateAccessCodeController,
+  createOrganizationController,
+  updateProfileController,
+  changePasswordController,
+  forgotPasswordController,
+  resetPasswordController,
+  cancelJoinRequestController,
 } from "../controllers/auth.controller.js";
 
 const router = express.Router();
@@ -27,10 +41,28 @@ router.post("/logout", logout);
 router.post("/accept-invite", acceptInvitation);
 router.put("/update-role", authMiddleware, updateRole);
 
+router.post("/organization/create", authMiddleware, createOrganizationController);
+router.put("/profile", authMiddleware, updateProfileController);
+router.put("/change-password", authMiddleware, changePasswordController);
+router.post("/forgot-password", forgotPasswordController);
+router.post("/reset-password", resetPasswordController);
+
+router.delete("/join-requests/:id", authMiddleware, cancelJoinRequestController);
+
 
 router.post("/invite", authMiddleware, roleMiddleware("owner", "admin"), inviteTeammate);
 router.get("/audit-logs", authMiddleware, roleMiddleware("owner", "admin"), getAuditLogs);
 router.get("/team/members", authMiddleware, getTeamMembers);
+
+
+router.get("/organizations/search", authMiddleware, searchOrganizationsController);
+router.post("/join-requests", authMiddleware, submitJoinRequestController);
+router.get("/join-requests/my", authMiddleware, getMyJoinRequestsController);
+router.get("/join-requests/pending", authMiddleware, roleMiddleware("owner", "admin"), getPendingRequestsController);
+router.get("/join-requests/history", authMiddleware, roleMiddleware("owner", "admin"), getRequestHistoryController);
+router.post("/join-requests/:id/action", authMiddleware, roleMiddleware("owner", "admin"), processJoinRequestController);
+router.get("/organization/code", authMiddleware, roleMiddleware("owner", "admin"), getAccessCodeController);
+router.post("/organization/regenerate-code", authMiddleware, roleMiddleware("owner", "admin"), regenerateAccessCodeController);
 
 
 router.post("/api-keys", authMiddleware, roleMiddleware("owner", "admin"), createApiKey);

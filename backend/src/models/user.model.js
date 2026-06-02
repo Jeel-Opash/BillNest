@@ -6,19 +6,26 @@ const userSchema = new mongoose.Schema(
     tenantId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
-      required: true,
+      required: false,
     },
 
 
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
-      required: true,
+      required: false,
     },
 
     name: {
       type: String,
       required: true,
+      trim: true,
+    },
+
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
       trim: true,
     },
 
@@ -90,6 +97,19 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
       default: "",
+    },
+
+    phone: {
+      type: String,
+      default: "",
+    },
+
+    resetPasswordToken: {
+      type: String,
+    },
+
+    resetPasswordExpires: {
+      type: Date,
     },
   },
   {

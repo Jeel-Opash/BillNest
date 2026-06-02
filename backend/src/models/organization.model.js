@@ -79,6 +79,13 @@ const organizationSchema = new mongoose.Schema(
       darkMode: { type: Boolean, default: false },
     },
 
+    accessCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: () => "ORG-" + Math.random().toString(36).substr(2, 6).toUpperCase()
+    },
+
     isActive: {
       type: Boolean,
       default: true,

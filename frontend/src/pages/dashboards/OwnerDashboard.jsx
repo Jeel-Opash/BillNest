@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import OverviewTab from "./owner/OverviewTab";
 import ClientsTab from "./owner/ClientsTab";
 import InvoicesTab from "./owner/InvoicesTab";
 import TeamTab from "./owner/TeamTab";
 import CreateWorkspaceTab from "./owner/CreateWorkspaceTab";
+import SubscriptionsTab from "./owner/SubscriptionsTab";
+import PaymentsTab from "./owner/PaymentsTab";
+import ReportsTab from "./owner/ReportsTab";
+import SettingsTab from "./owner/SettingsTab";
+import IntegrationsTab from "./owner/IntegrationsTab";
+import NotificationsTab from "./owner/NotificationsTab";
+import AuditLogsTab from "./owner/AuditLogsTab";
 
 const OwnerDashboard = () => {
   const { user, logout, showToast, addLocalInvitation } = useAuth();
@@ -225,10 +233,21 @@ const OwnerDashboard = () => {
   const [newPlanImage, setNewPlanImage] = useState("");
 
 
-  const [payments] = useState([
-    { id: "TXN-90241", invoice: "INV-1023", client: "Pixel Studio", method: "Stripe Card", amount: 15000, status: "succeeded", date: "2026-05-20" },
-    { id: "TXN-90240", invoice: "INV-1022", client: "Nova Software Inc", method: "Stripe Card", amount: 5000, status: "failed", date: "2026-05-15" }
-  ]);
+  const [payments, setPayments] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_payments`);
+      return saved ? JSON.parse(saved) : [
+        { id: "TXN-90241", invoice: "INV-1023", client: "Pixel Creative Labs", method: "Stripe Card", amount: 15000, status: "succeeded", date: "2026-05-20" },
+        { id: "TXN-90240", invoice: "INV-1022", client: "Nova Software Inc", method: "Stripe Card", amount: 5000, status: "failed", date: "2026-05-15" }
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`workspace_${user?.email || "guest"}_payments`, JSON.stringify(payments));
+  }, [payments, user]);
 
 
   const [inviteEmail, setInviteEmail] = useState("");
@@ -262,13 +281,38 @@ const OwnerDashboard = () => {
   const [webhookUrl, setWebhookUrl] = useState("https://hooks.zapier.com/hooks/catch/12345/abc");
 
 
-  const [orgSettings, setOrgSettings] = useState({
-    name: "CodeCraft Agency",
-    currency: "INR",
-    taxPrefix: "GST",
-    address: "Ring Road, Surat, Gujarat",
-    brandingColor: "#4f46e5"
+  const [orgSettings, setOrgSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_org_settings`);
+      return saved ? JSON.parse(saved) : {
+        name: "CodeCraft Agency",
+        logo: "",
+        address: "Ring Road, Surat, Gujarat",
+        gstNumber: "24AAAAA1111A1Z1",
+        timezone: "Asia/Kolkata (IST)",
+        currency: "INR",
+        invoicePrefix: "INV",
+        paymentTerms: "Due on Receipt",
+        taxRate: 18
+      };
+    } catch {
+      return {
+        name: "CodeCraft Agency",
+        logo: "",
+        address: "Ring Road, Surat, Gujarat",
+        gstNumber: "24AAAAA1111A1Z1",
+        timezone: "Asia/Kolkata (IST)",
+        currency: "INR",
+        invoicePrefix: "INV",
+        paymentTerms: "Due on Receipt",
+        taxRate: 18
+      };
+    }
   });
+
+  useEffect(() => {
+    localStorage.setItem(`workspace_${user?.email || "guest"}_org_settings`, JSON.stringify(orgSettings));
+  }, [orgSettings, user]);
 
 
   const [profileName, setProfileName] = useState("Rahul Patel");
@@ -312,6 +356,39 @@ const OwnerDashboard = () => {
       localStorage.setItem(`workspace_${user.email}_team_list`, JSON.stringify(teamList));
     }
   }, [teamList, user]);
+
+  useEffect(() => {
+    const fetchBackendTeammates = async () => {
+      try {
+        const res = await axios.get("/auth/team/members");
+        if (res.data.success && res.data.members) {
+          const dbMembers = res.data.members.map(m => ({
+            id: m._id,
+            name: m.name || m.email.split("@")[0],
+            email: m.email,
+            role: m.role,
+            status: m.status || "active"
+          }));
+
+          setTeamList(prev => {
+            const merged = [...dbMembers];
+            prev.forEach(p => {
+              if (p.status === "pending" && !merged.some(m => m.email.toLowerCase() === p.email.toLowerCase())) {
+                merged.push(p);
+              }
+            });
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load backend team members:", err);
+      }
+    };
+    
+    if (user) {
+      fetchBackendTeammates();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (clients.length > 0) {
@@ -602,7 +679,8 @@ const OwnerDashboard = () => {
             {
               title: "ANALYTICS",
               items: [
-                { id: "dashboard", label: "Dashboard", symbol: "dashboard" }
+                { id: "dashboard", label: "Dashboard", symbol: "dashboard" },
+                { id: "reports", label: "Reports & Analytics", symbol: "monitoring" }
               ]
             },
             {
@@ -620,7 +698,8 @@ const OwnerDashboard = () => {
               items: [
                 { id: "integrations", label: "Integrations", symbol: "key" },
                 { id: "settings", label: "Settings", symbol: "settings" },
-                { id: "notifications", label: `Notifications (${notifications.filter(n => !n.read).length})`, symbol: "notifications" }
+                { id: "notifications", label: `Notifications (${notifications.filter(n => !n.read).length})`, symbol: "notifications" },
+                { id: "audit", label: "Audit Logs", symbol: "terminal" }
               ]
             }
           ].map((group, gIdx) => (
@@ -764,16 +843,21 @@ const OwnerDashboard = () => {
 
           {activePage === "dashboard" && (
             <OverviewTab
-              paidValue={paidValue}
-              mrrValue={mrrValue}
-              outstandingValue={outstandingValue}
               user={user}
+              clients={clients}
+              invoices={invoices}
+              subscriptions={subscriptions}
+              payments={payments}
+              teamList={teamList}
+              auditLogs={auditLogs}
             />
           )}
 
           {activePage === "clients" && (
             <ClientsTab
               clients={clients}
+              setClients={setClients}
+              invoices={invoices}
               newClientName={newClientName}
               setNewClientName={setNewClientName}
               newClientCompany={newClientCompany}
@@ -789,6 +873,7 @@ const OwnerDashboard = () => {
               newClientAddress={newClientAddress}
               setNewClientAddress={setNewClientAddress}
               handleAddClient={handleAddClient}
+              showToast={showToast}
             />
           )}
 
@@ -820,206 +905,15 @@ const OwnerDashboard = () => {
           )}
 
           {activePage === "subscriptions" && (
-            <div className="flex flex-col gap-6">
-              <div>
-                <h3 className="font-heading text-2xl font-bold text-slate-900">Subscription Management</h3>
-                <p className="text-slate-500 text-sm mt-1">Oversee recurring revenue and organization subscription billing cycle settings.</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-heading text-lg font-bold text-slate-900">Recurring Client Schedules</h4>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-indigo-600/10 text-indigo-700 text-[10px] font-bold px-2.5 py-1 rounded-full">142 Active</span>
-                      <button
-                        onClick={() => {
-                          setSelectedPublishSubId(subscriptions[0]?.id || "");
-                          setShowPublishModal(true);
-                        }}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-sm outline-none cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">campaign</span>
-                        Publish Post
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {subscriptions.map(sub => {
-                      const initialLetters = sub.client.split(" ").map(w => w.charAt(0)).join("").substring(0, 2).toUpperCase();
-                      const subPosts = subscriptionPosts.filter(p => p.subscriptionId === sub.id);
-                      return (
-                        <div key={sub.id} className="bg-white border border-slate-100 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col hover:border-slate-200/80 transition-all duration-200 relative">
-
-                          {/* Big Size Logo / Banner Image */}
-                          <div className="w-full h-40 bg-indigo-50/50 border-b border-slate-100 overflow-hidden relative flex-shrink-0">
-                            {sub.imageUrl ? (
-                              <img src={sub.imageUrl} alt={sub.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600">
-                                <span className="material-symbols-outlined text-[36px] opacity-75">card_membership</span>
-                                <span className="text-[9px] font-extrabold tracking-widest uppercase mt-1">Standard Plan</span>
-                              </div>
-                            )}
-
-                            {/* Status Badge overlay */}
-                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                              <span className="text-[9px] font-extrabold text-emerald-800 uppercase tracking-wider">{sub.status}</span>
-                            </div>
-                          </div>
-
-                          {/* Card Content Body */}
-                          <div className="p-5 flex-1 flex flex-col justify-between gap-4">
-                            <div>
-                              <h5 className="font-extrabold text-slate-900 text-base leading-snug">{sub.name}</h5>
-                              <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[15px] text-slate-400">person</span>
-                                Client: <span className="font-semibold text-slate-700">{sub.client}</span>
-                              </p>
-                              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[15px] text-slate-400">schedule</span>
-                                Trial: <span className="font-semibold text-slate-700">{sub.trialDays} days</span>
-                              </p>
-                            </div>
-
-                            <div className="flex justify-between items-center border-t border-slate-50 pt-4 mt-2">
-                              <div>
-                                <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-wider">MONTHLY BASE</span>
-                                <span className="font-extrabold text-slate-900 text-lg">₹{sub.price.toLocaleString()}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Announcements Feed inside the Card */}
-                          {subPosts.length > 0 && (
-                            <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-4">
-                              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">Announcements Feed</span>
-                              <div className="space-y-2.5">
-                                {subPosts.map(p => (
-                                  <div key={p.id} className="p-3 bg-white border border-slate-100 rounded-xl flex flex-col gap-2 shadow-[0_1px_2px_rgba(0,0,0,0.02)] animate-fade-in">
-                                    {p.imageUrl && (
-                                      <div className="w-full h-20 rounded-lg overflow-hidden border border-slate-100">
-                                        <img src={p.imageUrl} alt={p.title} className="w-full h-full object-cover" />
-                                      </div>
-                                    )}
-                                    <div className="flex flex-col gap-1">
-                                      <div className="flex justify-between items-start gap-2">
-                                        <h6 className="font-extrabold text-xs text-slate-800 leading-snug">{p.title}</h6>
-                                        <span className="text-[8px] text-slate-400 font-bold whitespace-nowrap">{p.date}</span>
-                                      </div>
-                                      <p className="text-[10px] text-slate-500 font-medium leading-relaxed">{p.content}</p>
-                                      {p.attachment && (
-                                        <a
-                                          href={p.attachment.dataUrl}
-                                          download={p.attachment.name}
-                                          className="mt-1 self-start inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 text-indigo-700 text-[9px] font-bold rounded-lg transition-colors cursor-pointer"
-                                        >
-                                          <span className="material-symbols-outlined text-[12px]">download</span>
-                                          Download Attachment
-                                        </a>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                  <h4 className="font-heading text-lg font-bold text-slate-900">Initialize Subscription Plan</h4>
-                  <form onSubmit={handleCreatePlan} className="space-y-4">
-                    <div>
-                      <label className="block text-slate-500 text-xs font-semibold mb-1">Plan Title</label>
-                      <input type="text" required placeholder="e.g. Premium Tech Support" className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={newPlanName} onChange={(e) => setNewPlanName(e.target.value)} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-500 text-xs font-semibold mb-1">Recurring Cost (₹)</label>
-                        <input type="number" required min="1" className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={newPlanPrice} onChange={(e) => setNewPlanPrice(parseInt(e.target.value) || 0)} />
-                      </div>
-                      <div>
-                        <label className="block text-slate-500 text-xs font-semibold mb-1">Billing Interval</label>
-                        <select className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={newPlanCycle} onChange={(e) => setNewPlanCycle(e.target.value)}>
-                          <option value="monthly">Monthly Recurring</option>
-                          <option value="yearly">Yearly Recurring</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-500 text-xs font-semibold mb-1">Target Client</label>
-                        <select className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={newPlanClient} onChange={(e) => setNewPlanClient(e.target.value)}>
-                          {clients.map(c => <option key={c.id} value={c.company}>{c.company}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-slate-500 text-xs font-semibold mb-1">Trial Period (Days)</label>
-                        <input type="number" min="0" className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={newPlanTrial} onChange={(e) => setNewPlanTrial(parseInt(e.target.value) || 0)} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-500 text-xs font-semibold mb-1 flex justify-between items-center">
-                        <span>Plan Icon / Logo</span>
-                        {newPlanImage && (
-                          <button
-                            type="button"
-                            onClick={() => setNewPlanImage("")}
-                            className="text-rose-600 font-bold text-[9px] uppercase cursor-pointer"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </label>
-                      {newPlanImage ? (
-                        <div className="w-full h-20 rounded-xl overflow-hidden border border-slate-200 mb-2 relative group">
-                          <img src={newPlanImage} alt="Plan logo preview" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-slate-900/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-[9px] text-white font-bold bg-slate-950/60 px-2 py-0.5 rounded">Logo Selected</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <label className="flex flex-col items-center justify-center h-12 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-indigo-500/50 rounded-xl cursor-pointer transition-all select-none group">
-                          <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1 group-hover:text-indigo-600">
-                            <span className="material-symbols-outlined text-[14px]">image</span> Upload Custom Logo from PC
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  setNewPlanImage(reader.result);
-                                  showToast("Plan logo loaded successfully!", "success");
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </label>
-                      )}
-                    </div>
-
-                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-md mt-2 cursor-pointer">
-                      Initialize Plan
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
+            <SubscriptionsTab
+              user={user}
+              clients={clients}
+              subscriptions={subscriptions}
+              setSubscriptions={setSubscriptions}
+              invoices={invoices}
+              payments={payments}
+              showToast={showToast}
+            />
           )}
 
           {activePage === "payments" && (
@@ -1317,279 +1211,40 @@ const OwnerDashboard = () => {
           )}
 
           {activePage === "integrations" && (
-            <div className="flex flex-col gap-6">
-              <div>
-                <h3 className="font-heading text-2xl font-bold text-slate-900">Integrations & API Keys</h3>
-                <p className="text-slate-500 text-sm mt-1">Configure workspace credentials to bridge billing events and data pipelines to outgoing services. Use these keys to authenticate your custom applications.</p>
-              </div>
+            <IntegrationsTab
+              user={user}
+              showToast={showToast}
+            />
+          )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-8 flex flex-col gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-heading text-base font-bold text-slate-900">Developer Scoped Keys</h4>
-                      <span className="material-symbols-outlined text-slate-400 text-lg">vpn_key</span>
-                    </div>
-                    <p className="text-xs text-slate-400">Generate new keys for specific app instances.</p>
+          {activePage === "payments" && (
+            <PaymentsTab
+              user={user}
+              payments={payments}
+              setPayments={setPayments}
+              invoices={invoices}
+              setInvoices={setInvoices}
+              showToast={showToast}
+            />
+          )}
 
-                    <form onSubmit={handleCreateApiKey} className="flex gap-2">
-                      <input type="text" required placeholder="Label key (e.g. Mobile App API)" className="flex-1 bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={newKeyLabel} onChange={(e) => setNewKeyLabel(e.target.value)} />
-                      <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition-colors shadow-md flex items-center gap-1.5 whitespace-nowrap">
-                        <span className="material-symbols-outlined text-[14px]">add</span>
-                        Deploy Key
-                      </button>
-                    </form>
-
-                    <div className="space-y-3.5 mt-2">
-                      <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Keys</span>
-
-                      <div className="p-4 bg-slate-50/50 rounded-xl border border-slate-100 flex justify-between items-center hover:border-slate-200 transition-all">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-                            <span className="material-symbols-outlined text-[18px]">shield</span>
-                          </div>
-                          <div>
-                            <h5 className="font-bold text-slate-900 text-xs">Production Key Scoped</h5>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <code className="font-mono text-[10px] text-slate-500 bg-slate-100/60 px-1.5 py-0.5 rounded">bn_live_codecraft_99f2e811bc</code>
-                              <button onClick={() => { navigator.clipboard.writeText("bn_live_codecraft_99f2e811bc"); showToast("Copied key to clipboard", "info"); }} className="text-slate-400 hover:text-slate-600">
-                                <span className="material-symbols-outlined text-[14px] cursor-pointer">content_copy</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right flex items-center gap-4">
-                          <div className="hidden sm:block">
-                            <span className="block text-[8px] text-slate-400 font-bold uppercase">CREATED</span>
-                            <span className="text-[10px] text-slate-500 font-bold">Oct 24, 2023</span>
-                          </div>
-                          <button onClick={() => showToast("Revoke locked for primary key.", "warning")} className="text-rose-600 hover:text-rose-800 font-bold text-xs">
-                            Revoke
-                          </button>
-                        </div>
-                      </div>
-
-                      {apiKeys.filter(k => k.id !== "primary").map(k => (
-                        <div key={k.id} className="p-4 bg-slate-50/50 rounded-xl border border-slate-100 flex justify-between items-center hover:border-slate-200 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
-                              <span className="material-symbols-outlined text-[18px]">deployed_code</span>
-                            </div>
-                            <div>
-                              <h5 className="font-bold text-slate-900 text-xs">{k.label}</h5>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <code className="font-mono text-[10px] text-slate-500 bg-slate-100/60 px-1.5 py-0.5 rounded">{k.key}</code>
-                                <button onClick={() => { navigator.clipboard.writeText(k.key); showToast("Copied key", "info"); }} className="text-slate-400 hover:text-slate-600">
-                                  <span className="material-symbols-outlined text-[14px] cursor-pointer">content_copy</span>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right flex items-center gap-4">
-                            <div className="hidden sm:block">
-                              <span className="block text-[8px] text-slate-400 font-bold uppercase">CREATED</span>
-                              <span className="text-[10px] text-slate-500 font-bold">Just now</span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                setApiKeys(apiKeys.filter(item => item.id !== k.id));
-                                showToast("API Key revoked successfully.", "info");
-                              }}
-                              className="text-rose-600 hover:text-rose-800 font-bold text-xs"
-                            >
-                              Revoke
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-indigo-600 text-sm">hub</span>
-                        <h4 className="font-heading text-base font-bold text-slate-900">Outgoing Webhook Endpoints</h4>
-                      </div>
-                      <span className="material-symbols-outlined text-slate-400 text-lg">alt_route</span>
-                    </div>
-                    <p className="text-xs text-slate-400">Send real-time event notifications to external listeners.</p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-slate-500 text-xs font-semibold mb-1">Zapier / Slack Webhook URL</label>
-                        <div className="relative">
-                          <input type="text" className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-3 text-sm font-semibold transition-all outline-none" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
-                          <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">bolt</span>
-                        </div>
-                      </div>
-
-                      <button onClick={() => showToast("Outgoing webhook endpoint configuration saved.", "success")} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-md flex items-center justify-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px]">save</span>
-                        Save Webhook Url
-                      </button>
-                    </div>
-
-                    <div className="bg-indigo-50/40 border border-indigo-100 p-3.5 rounded-xl flex items-start gap-2 mt-1">
-                      <span className="material-symbols-outlined text-indigo-600 text-sm mt-0.5">info</span>
-                      <p className="text-[11px] text-indigo-800 font-semibold leading-relaxed">
-                        Webhooks allow you to build or set up integrations, such as GitHub Apps or OAuth Apps, which subscribe to certain events on BillNest. <span className="text-indigo-600 hover:underline cursor-pointer">View Documentation &rarr;</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-4">
-                    <div>
-                      <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">TOTAL REQUESTS</span>
-                      <h4 className="font-extrabold text-slate-900 text-2xl">12.4k</h4>
-                    </div>
-                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-600" style={{ width: "70%" }}></div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-4">
-                    <div>
-                      <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">SUCCESS RATE</span>
-                      <h4 className="font-extrabold text-slate-900 text-2xl">99.9%</h4>
-                    </div>
-                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500" style={{ width: "99.9%" }}></div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                    <h5 className="font-heading text-sm font-bold text-slate-900">Developer Resources</h5>
-                    <div className="space-y-3">
-                      <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between hover:border-slate-200 transition-all cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-slate-500 text-[18px]">menu_book</span>
-                          <span className="text-xs font-bold text-slate-700">API Reference</span>
-                        </div>
-                        <span className="material-symbols-outlined text-slate-400 text-sm">chevron_right</span>
-                      </div>
-
-                      <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between hover:border-slate-200 transition-all cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-slate-500 text-[18px]">code</span>
-                          <span className="text-xs font-bold text-slate-700">SDK Libraries</span>
-                        </div>
-                        <span className="material-symbols-outlined text-slate-400 text-sm">chevron_right</span>
-                      </div>
-
-                      <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between hover:border-slate-200 transition-all cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-slate-500 text-[18px]">monitoring</span>
-                          <span className="text-xs font-bold text-slate-700">Status Page</span>
-                        </div>
-                        <span className="material-symbols-outlined text-slate-400 text-sm">chevron_right</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {activePage === "reports" && (
+            <ReportsTab
+              user={user}
+              clients={clients}
+              invoices={invoices}
+              subscriptions={subscriptions}
+              payments={payments}
+              showToast={showToast}
+            />
           )}
 
           {activePage === "settings" && (
-            <div className="flex flex-col gap-6">
-              <div>
-                <h3 className="font-heading text-2xl font-bold text-slate-900">Organization Settings</h3>
-                <p className="text-slate-500 text-sm mt-1">Branding parameters and tax isolation presets for this workspace tenant.</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="material-symbols-outlined text-indigo-600 text-[18px]">business</span>
-                    <h4 className="font-heading text-lg font-bold text-slate-900">Workspace Identification</h4>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-slate-500 text-xs font-semibold mb-1">Organization Legal Title</label>
-                      <input type="text" className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={orgSettings.name} onChange={(e) => setOrgSettings({ ...orgSettings, name: e.target.value })} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-500 text-xs font-semibold mb-1">Tax prefix</label>
-                        <input type="text" className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={orgSettings.taxPrefix} onChange={(e) => setOrgSettings({ ...orgSettings, taxPrefix: e.target.value })} />
-                      </div>
-                      <div>
-                        <label className="block text-slate-500 text-xs font-semibold mb-1">Base Currency</label>
-                        <div className="relative">
-                          <select className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 pr-8 text-sm font-semibold transition-all outline-none cursor-pointer appearance-none" value={orgSettings.currency} onChange={(e) => setOrgSettings({ ...orgSettings, currency: e.target.value })}>
-                            <option value="INR">INR (₹)</option>
-                            <option value="USD">USD ($)</option>
-                            <option value="EUR">EUR (€)</option>
-                          </select>
-                          <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">arrow_drop_down</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-500 text-xs font-semibold mb-1">Business Address</label>
-                      <input type="text" className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={orgSettings.address} onChange={(e) => setOrgSettings({ ...orgSettings, address: e.target.value })} />
-                    </div>
-
-                    <button onClick={() => showToast("Branding settings saved successfully.", "success")} className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-xl font-bold text-xs transition-all shadow-md w-fit flex items-center gap-1.5 mt-2">
-                      <span className="material-symbols-outlined text-[14px]">save</span>
-                      Save Branding Configurations
-                    </button>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col items-center text-center gap-4">
-                    <div className="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-heading font-extrabold text-2xl shadow-[0_4px_12px_rgba(79,70,229,0.2)]">
-                      AF
-                    </div>
-                    <div>
-                      <h4 className="font-heading text-base font-bold text-slate-900">Visual Identity</h4>
-                      <p className="text-slate-400 text-xs mt-1">This logo will appear on all outgoing invoices and client portal interfaces.</p>
-                    </div>
-                    <button onClick={() => showToast("Logo updates locked to custom domain verification.", "warning")} className="w-full bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 py-2.5 rounded-xl text-xs font-bold transition-all">
-                      Update Logo Assets
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs">
-                        <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                        COMPLIANCE
-                      </div>
-                      <span className="text-slate-900 font-extrabold text-sm">Verified</span>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5 text-indigo-600 font-bold text-xs">
-                        <span className="material-symbols-outlined text-[16px]">lock</span>
-                        SECURITY
-                      </div>
-                      <span className="text-slate-900 font-extrabold text-sm">High (2FA)</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-indigo-600 text-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(79,70,229,0.15)] flex flex-col gap-3 relative overflow-hidden">
-                    <div className="absolute right-0 bottom-0 opacity-10 translate-x-3 translate-y-3">
-                      <span className="material-symbols-outlined text-[120px] pointer-events-none">lightbulb</span>
-                    </div>
-                    <h5 className="font-heading font-extrabold text-sm flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[18px]">lightbulb</span>
-                      Tax Presets Tip
-                    </h5>
-                    <p className="text-xs text-indigo-100/90 leading-relaxed font-medium">
-                      Updating your Tax Prefix will automatically update all drafted invoices that haven't been sent yet. Existing 'Paid' invoices will remain untouched for audit integrity.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <SettingsTab
+              orgSettings={orgSettings}
+              setOrgSettings={setOrgSettings}
+              showToast={showToast}
+            />
           )}
 
           {activePage === "profile" && (
@@ -1634,112 +1289,17 @@ const OwnerDashboard = () => {
           )}
 
           {activePage === "notifications" && (
-            <div className="flex flex-col gap-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-heading text-2xl font-bold text-slate-900">Notifications</h3>
-                  <p className="text-slate-500 text-sm mt-1">Review live logs, organization activity events, and invite validations.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setNotifications(notifications.map(n => ({ ...n, read: true })));
-                    showToast("All alerts marked read.", "info");
-                  }}
-                  className="bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-[16px]">done_all</span>
-                  Mark all read
-                </button>
-              </div>
+            <NotificationsTab
+              user={user}
+              showToast={showToast}
+            />
+          )}
 
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col overflow-hidden">
-                {notifications.map((n, i) => (
-                  <div key={n.id} className={`p-5 flex justify-between items-center transition-all border-b border-slate-50 last:border-b-0 ${n.read
-                    ? "text-slate-400/90 opacity-70"
-                    : "bg-white text-slate-900 font-bold border-l-[3px] border-l-indigo-600 pl-[17px]"
-                    }`}>
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      {!n.read && <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full flex-shrink-0 animate-pulse"></span>}
-                      <div>
-                        {n.text.includes("paid Invoice") ? (
-                          <p className="text-xs text-slate-900 font-bold">
-                            <span className="text-indigo-600">{n.text.split("paid Invoice")[0]}</span>
-                            paid Invoice
-                            <span className="font-mono text-indigo-700 bg-indigo-50/80 px-1 py-0.5 rounded text-[10px] mx-1 font-bold">{n.text.split("paid Invoice")[1]?.split(" ")[1]}</span>
-                            {n.text.split("paid Invoice")[1]?.split(" ")?.slice(2)?.join(" ")}
-                          </p>
-                        ) : (
-                          <p className="text-xs font-bold">{n.text}</p>
-                        )}
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                          {i === 0 && "Automated billing confirmation"}
-                          {i === 1 && "Financial Operations Alert"}
-                          {i === 2 && "Workspace management"}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex-shrink-0 ml-3">{n.time}</span>
-                  </div>
-                ))}
-
-                <div className="p-5 flex justify-between items-center border-b border-slate-50 last:border-b-0 text-slate-400/90 opacity-70">
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="pl-3.5">
-                      <p className="text-xs font-semibold">Neha Patel accepted your Team invite credentials.</p>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">Workspace management</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex-shrink-0 ml-3">2 days ago</span>
-                </div>
-
-                <div className="p-5 flex justify-between items-center border-b border-slate-50 last:border-b-0 text-slate-400/90 opacity-70">
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="pl-3.5">
-                      <p className="text-xs font-semibold">System audit log exported to reports@agencyflow.com.</p>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">Automated System Report</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex-shrink-0 ml-3">3 days ago</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-4">
-                  <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-600">
-                    <span className="material-symbols-outlined text-[18px]">update</span>
-                  </div>
-                  <div>
-                    <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">ACTIVITY FREQUENCY</span>
-                    <h4 className="font-extrabold text-indigo-600 text-lg">+12% <span className="text-slate-400 font-bold text-xs normal-case">vs last week</span></h4>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-4">
-                  <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-center text-indigo-600">
-                    <span className="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
-                  </div>
-                  <div>
-                    <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">UNREAD ALERTS</span>
-                    <h4 className="font-extrabold text-slate-900 text-lg">2 <span className="text-slate-400 font-bold text-xs normal-case">Active now</span></h4>
-                  </div>
-                </div>
-
-                <div className="bg-indigo-600 text-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(79,70,229,0.15)] flex flex-col justify-between gap-4 relative overflow-hidden">
-                  <div className="absolute right-0 bottom-0 opacity-10 translate-x-3 translate-y-3">
-                    <span className="material-symbols-outlined text-[100px] pointer-events-none">workspace_premium</span>
-                  </div>
-                  <div>
-                    <h5 className="font-heading font-extrabold text-sm mb-1">Upgrade Logic</h5>
-                    <p className="text-[11px] text-indigo-100 leading-relaxed font-medium">
-                      Custom notification webhooks are available on Enterprise plans.
-                    </p>
-                  </div>
-                  <button onClick={() => showToast("Upgrade modal launched.", "info")} className="w-fit bg-white hover:bg-slate-50 text-indigo-600 font-extrabold text-[10px] px-3.5 py-1.5 rounded-lg shadow-sm uppercase tracking-wider transition-all">
-                    View Plans
-                  </button>
-                </div>
-              </div>
-            </div>
+          {activePage === "audit" && (
+            <AuditLogsTab
+              user={user}
+              showToast={showToast}
+            />
           )}
 
         </div>

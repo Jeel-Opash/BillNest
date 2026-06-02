@@ -10,6 +10,8 @@ import Register from "./pages/Register";
 import AcceptInvite from "./pages/AcceptInvite";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
+import JoinWorkspacePage from "./pages/JoinWorkspacePage";
+import Welcome from "./pages/Welcome";
 import Clients from "./pages/Clients";
 import Invoices from "./pages/Invoices";
 import Plans from "./pages/Plans";
@@ -32,6 +34,24 @@ function App() {
           <Route path="/accept-invite/:token" element={<AcceptInvite />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
+          
+          <Route
+            path="/welcome"
+            element={
+              <ProtectedRoute>
+                <Welcome />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/join-workspace"
+            element={
+              <ProtectedRoute>
+                <JoinWorkspacePage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected Dashboard Routes (Bypassing standard AppShell for customized multi-tenant dashboards) */}
           <Route

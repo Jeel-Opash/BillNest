@@ -90,8 +90,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const requestInterceptor = axios.interceptors.request.use(
       (config) => {
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        // Prefer in-memory state token; fall back to localStorage so that
+        // authenticated calls on the Welcome page work even before React
+        // state has fully hydrated (fixes /auth/join-requests 400 errors).
+        const activeToken = token || localStorage.getItem("bn_access_token");
+        if (activeToken) {
+          config.headers.Authorization = `Bearer ${activeToken}`;
         }
         return config;
       },
@@ -152,15 +156,17 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
 
-  const register = async (organizationName, name, email, password, role = "owner") => {
+  const register = async (name, username, email, password, phone = "", avatar = "", organizationName = "") => {
     try {
       setIsLoading(true);
       const res = await axios.post("/auth/register", {
-        organizationName,
         name,
+        username,
         email,
         password,
-        role
+        phone,
+        avatar,
+        organizationName
       });
 
       if (res.data.success) {
@@ -170,8 +176,8 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("bn_refresh_token", newRefreshToken);
         localStorage.setItem("bn_access_token", newAccessToken);
         localStorage.setItem("bn_user", JSON.stringify(userData));
-        showToast("Welcome to BillNest! Organization registered successfully.", "success");
-        return { success: true };
+        showToast("Welcome to BillNest! Your account is created successfully.", "success");
+        return { success: true, user: userData };
       }
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Registration failed. Please check your credentials.";
@@ -183,10 +189,17 @@ export const AuthProvider = ({ children }) => {
   };
 
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     try {
       setIsLoading(true);
-      const res = await axios.post("/auth/login", { email, password });
+      // Determine if identifier is email or username
+      const payload = {
+        email: identifier.includes("@") ? identifier : undefined,
+        username: !identifier.includes("@") ? identifier : undefined,
+        password
+      };
+
+      const res = await axios.post("/auth/login", payload);
 
       if (res.data.success) {
         const { token: newAccessToken, refreshToken: newRefreshToken, user: userData } = res.data;
@@ -196,10 +209,107 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("bn_access_token", newAccessToken);
         localStorage.setItem("bn_user", JSON.stringify(userData));
         showToast(`Welcome back, ${userData.name}!`, "info");
+        return { success: true, user: userData };
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Invalid email/username or password.";
+      showToast(errorMsg, "error");
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createOrganization = async (details) => {
+    try {
+      setIsLoading(true);
+      const res = await axios.post("/auth/organization/create", details);
+      if (res.data.success) {
+        const { token: newAccessToken, refreshToken: newRefreshToken, user: userData } = res.data;
+        setToken(newAccessToken);
+        setUser(userData);
+        localStorage.setItem("bn_refresh_token", newRefreshToken);
+        localStorage.setItem("bn_access_token", newAccessToken);
+        localStorage.setItem("bn_user", JSON.stringify(userData));
+        showToast("Workspace Organization created successfully!", "success");
+        return { success: true, user: userData };
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to create organization.";
+      showToast(errorMsg, "error");
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateProfile = async (details) => {
+    try {
+      setIsLoading(true);
+      const res = await axios.put("/auth/profile", details);
+      if (res.data.success) {
+        const updatedUser = {
+          ...user,
+          ...res.data.user
+        };
+        setUser(updatedUser);
+        localStorage.setItem("bn_user", JSON.stringify(updatedUser));
+        showToast("Profile updated successfully!", "success");
+        return { success: true, user: updatedUser };
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to update profile.";
+      showToast(errorMsg, "error");
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const changePassword = async (details) => {
+    try {
+      setIsLoading(true);
+      const res = await axios.put("/auth/change-password", details);
+      if (res.data.success) {
+        showToast("Password updated successfully!", "success");
         return { success: true };
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.message || "Invalid email or password.";
+      const errorMsg = error.response?.data?.message || "Failed to change password.";
+      showToast(errorMsg, "error");
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const forgotPassword = async (email) => {
+    try {
+      setIsLoading(true);
+      const res = await axios.post("/auth/forgot-password", { email });
+      if (res.data.success) {
+        showToast(res.data.message, "success");
+        return { success: true, resetToken: res.data.resetToken };
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to initiate password reset.";
+      showToast(errorMsg, "error");
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetPassword = async (token, password) => {
+    try {
+      setIsLoading(true);
+      const res = await axios.post("/auth/reset-password", { token, password });
+      if (res.data.success) {
+        showToast("Password has been reset successfully. Please log in.", "success");
+        return { success: true };
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to reset password.";
       showToast(errorMsg, "error");
       return { success: false, error: errorMsg };
     } finally {
@@ -423,7 +533,12 @@ export const AuthProvider = ({ children }) => {
         addLocalInvitation,
         acceptLocalInvitation,
         declineLocalInvitation,
-        simulateLoginAs
+        simulateLoginAs,
+        createOrganization,
+        updateProfile,
+        changePassword,
+        forgotPassword,
+        resetPassword
       }}
     >
       {children}

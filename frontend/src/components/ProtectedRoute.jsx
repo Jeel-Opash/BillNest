@@ -49,6 +49,16 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Force workspace welcome page if user hasn't created or joined an organization
+  if (!user.organization && location.pathname !== "/welcome") {
+    return <Navigate to="/welcome" replace />;
+  }
+
+  // Redirect away from welcome screen if organization is already active
+  if (user.organization && location.pathname === "/welcome") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }

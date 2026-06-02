@@ -10,7 +10,7 @@ export const initScheduler = () => {
     console.log("Scheduler Job: Checking for invoices that passed their due date...");
     try {
       const today = new Date();
-      
+
       const result = await Invoice.updateMany(
         {
           status: "sent",

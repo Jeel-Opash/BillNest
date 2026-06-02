@@ -20,6 +20,17 @@ const OwnerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const safeSaveToLocalStorage = (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error(`Local storage write failed for key "${key}":`, error);
+      if (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED") {
+        showToast("Local storage full! Please clear browser cache/storage or remove large images.", "warning");
+      }
+    }
+  };
+
 
   const getActivePageFromPath = () => {
     const parts = location.pathname.split("/");
@@ -246,7 +257,7 @@ const OwnerDashboard = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem(`workspace_${user?.email || "guest"}_payments`, JSON.stringify(payments));
+    safeSaveToLocalStorage(`workspace_${user?.email || "guest"}_payments`, JSON.stringify(payments));
   }, [payments, user]);
 
 
@@ -311,7 +322,7 @@ const OwnerDashboard = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem(`workspace_${user?.email || "guest"}_org_settings`, JSON.stringify(orgSettings));
+    safeSaveToLocalStorage(`workspace_${user?.email || "guest"}_org_settings`, JSON.stringify(orgSettings));
   }, [orgSettings, user]);
 
 
@@ -329,31 +340,31 @@ const OwnerDashboard = () => {
 
   useEffect(() => {
     if (user?.email) {
-      localStorage.setItem(`workspace_${user.email}_clients`, JSON.stringify(clients));
+      safeSaveToLocalStorage(`workspace_${user.email}_clients`, JSON.stringify(clients));
     }
   }, [clients, user]);
 
   useEffect(() => {
     if (user?.email) {
-      localStorage.setItem(`workspace_${user.email}_invoices`, JSON.stringify(invoices));
+      safeSaveToLocalStorage(`workspace_${user.email}_invoices`, JSON.stringify(invoices));
     }
   }, [invoices, user]);
 
   useEffect(() => {
     if (user?.email) {
-      localStorage.setItem(`workspace_${user.email}_subscriptions`, JSON.stringify(subscriptions));
+      safeSaveToLocalStorage(`workspace_${user.email}_subscriptions`, JSON.stringify(subscriptions));
     }
   }, [subscriptions, user]);
 
   useEffect(() => {
     if (user?.email) {
-      localStorage.setItem(`workspace_${user.email}_subscription_posts`, JSON.stringify(subscriptionPosts));
+      safeSaveToLocalStorage(`workspace_${user.email}_subscription_posts`, JSON.stringify(subscriptionPosts));
     }
   }, [subscriptionPosts, user]);
 
   useEffect(() => {
     if (user?.email) {
-      localStorage.setItem(`workspace_${user.email}_team_list`, JSON.stringify(teamList));
+      safeSaveToLocalStorage(`workspace_${user.email}_team_list`, JSON.stringify(teamList));
     }
   }, [teamList, user]);
 
@@ -619,7 +630,7 @@ const OwnerDashboard = () => {
     };
     const updated = [...subscriptionPosts, newPost];
     setSubscriptionPosts(updated);
-    localStorage.setItem("billnest_subscription_posts", JSON.stringify(updated));
+    safeSaveToLocalStorage("billnest_subscription_posts", JSON.stringify(updated));
     showToast("Subscription announcement published!", "success");
     setActivePostSubId(null);
     setNewPostTitle("");

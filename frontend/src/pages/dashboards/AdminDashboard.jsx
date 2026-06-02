@@ -110,7 +110,6 @@ const AdminDashboard = () => {
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
 
-      {/* Sidebar Layout */}
       <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col p-5 bg-white border-r border-slate-100 z-50">
         <div className="mb-6 flex items-center gap-3 px-2">
           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-100">
@@ -170,10 +169,8 @@ const AdminDashboard = () => {
         </div>
       </aside>
 
-      {/* Main Container */}
       <main className="ml-64 flex-1 min-h-screen flex flex-col">
 
-        {/* Global sticky Header */}
         <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-8 bg-white/80 backdrop-blur-md border-b border-slate-100">
           <div className="flex items-center">
             <span className="text-sm font-bold text-slate-700 capitalize">
@@ -253,10 +250,8 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-        {/* Outer body view */}
         <div className="p-8 w-full flex-1 flex flex-col gap-8 animate-fade-in">
 
-          {/* Welcome Banner */}
           <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-slate-900 font-heading text-xl font-black tracking-tight">Welcome, {user?.name.split(" ")[0]}!</h2>
@@ -270,7 +265,6 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Rendering active tab page */}
           {activePage === "dashboard" && (
             <AdminDashboardTab
               user={user}

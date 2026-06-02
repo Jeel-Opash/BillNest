@@ -22,6 +22,29 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
   const [responseNotes, setResponseNotes] = useState("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+
+  const handleInviteSubmit = async (e) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+    
+    setIsSendingInvite(true);
+    try {
+      const res = await axios.post("/auth/invite", { email: inviteEmail, role: inviteRole });
+      if (res.data.success) {
+        showToast(`Invitation sent to ${inviteEmail} successfully!`, "success");
+        setInviteEmail("");
+      }
+    } catch (err) {
+      console.error("Failed to send invite:", err);
+      showToast(err.response?.data?.message || "Failed to send invitation.", "error");
+    } finally {
+      setIsSendingInvite(false);
+    }
+  };
+
 
   const fetchTeammates = async () => {
     try {
@@ -127,7 +150,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     setIsProcessingAction(true);
     try {
       const payload = {
-        action: actionType,
+        action: actionType === "approve" ? "approved" : "rejected",
         notes: responseNotes,
         ...(actionType === "approve" ? { finalRole: assignRole } : {})
       };
@@ -152,11 +175,14 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
 
   const handleUpdateTeammateRole = async (userId, newRole) => {
     try {
-
-      setTeamList(teamList.map(t => t.id === userId ? { ...t, role: newRole } : t));
-      showToast(`Role updated to ${newRole.toUpperCase()} successfully.`, "success");
+      const res = await axios.put("/auth/update-role", { userId, role: newRole });
+      if (res.data.success) {
+        setTeamList(teamList.map(t => t.id === userId ? { ...t, role: newRole } : t));
+        showToast(`Role updated to ${newRole.toUpperCase()} successfully.`, "success");
+      }
     } catch (err) {
-      showToast("Failed to update role.", "error");
+      console.error("Failed to update role:", err);
+      showToast(err.response?.data?.message || "Failed to update role.", "error");
     }
   };
 
@@ -298,79 +324,146 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
           
           {/* ACTIVE TEAMMATES */}
           {activeSubTab === "members" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="font-heading text-sm font-bold text-slate-800">Workspace Active Roster</h4>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Scope: {user?.organization?.name}</span>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* Teammates List */}
+              <div className="lg:col-span-8 space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-heading text-sm font-bold text-slate-800">Workspace Active Roster</h4>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Scope: {user?.organization?.name}</span>
+                </div>
 
-              {teamList.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-6">No teammates registered in this workspace yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {teamList.map(t => {
-                    const initials = t.name.split(" ").map(w => w.charAt(0)).join("").substring(0, 2).toUpperCase();
-                    return (
-                      <div key={t.id} className="p-4 bg-slate-50/40 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-200/80 transition-all">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-extrabold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-                            {initials}
+                {teamList.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-6">No teammates registered in this workspace yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {teamList.map(t => {
+                      const initials = t.name.split(" ").map(w => w.charAt(0)).join("").substring(0, 2).toUpperCase();
+                      return (
+                        <div key={t.id} className="p-4 bg-slate-50/40 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-200/80 transition-all">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600 font-extrabold text-xs flex items-center justify-center flex-shrink-0 shadow-sm border border-indigo-100/30">
+                              {initials}
+                            </div>
+                            <div>
+                              <h5 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                {t.name}
+                                {t.role === "owner" && <span className="bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase px-1 py-0.2 rounded shadow-sm">Owner</span>}
+                              </h5>
+                              <p className="text-[10px] text-slate-500">{t.email}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h5 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                              {t.name}
-                              {t.role === "owner" && <span className="bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase px-1 py-0.2 rounded shadow-sm">Owner</span>}
-                            </h5>
-                            <p className="text-[10px] text-slate-500">{t.email}</p>
-                          </div>
-                        </div>
 
-                        <div className="flex flex-wrap items-center gap-6 text-xs w-full sm:w-auto justify-between sm:justify-end flex-1 sm:flex-initial">
-                          <div>
-                            <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Privilege Role</span>
-                            {t.role === "owner" ? (
-                              renderRoleBadge(t.role)
-                            ) : (
-                              <select
-                                value={t.role}
-                                onChange={(e) => handleUpdateTeammateRole(t.id, e.target.value)}
-                                className="bg-white border border-slate-200 focus:border-indigo-600 rounded-lg py-1 px-2.5 text-xs font-semibold outline-none cursor-pointer text-slate-700 transition-colors shadow-sm"
+                          <div className="flex flex-wrap items-center gap-6 text-xs w-full sm:w-auto justify-between sm:justify-end flex-1 sm:flex-initial">
+                            <div>
+                              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Privilege Role</span>
+                              {t.role === "owner" ? (
+                                renderRoleBadge(t.role)
+                              ) : (
+                                <select
+                                  value={t.role}
+                                  onChange={(e) => handleUpdateTeammateRole(t.id, e.target.value)}
+                                  className="bg-white border border-slate-200 focus:border-indigo-600 rounded-lg py-1 px-2.5 text-xs font-semibold outline-none cursor-pointer text-slate-700 transition-colors shadow-sm"
+                                >
+                                  <option value="admin">Admin</option>
+                                  <option value="member">Member</option>
+                                  <option value="read_only">Read Only</option>
+                                </select>
+                              )}
+                            </div>
+
+                            <div className="text-left sm:text-right">
+                              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Last Login</span>
+                              <span className="text-slate-600 font-bold">{t.lastLogin}</span>
+                            </div>
+
+                            <div className="text-left sm:text-right">
+                              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">Status</span>
+                              <span className="inline-flex items-center gap-1 font-bold text-emerald-700 capitalize">
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                                Active
+                              </span>
+                            </div>
+
+                            {t.role !== "owner" && (
+                              <button
+                                onClick={() => handleDeleteTeammate(t.id, t.name)}
+                                className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-auto sm:ml-0 cursor-pointer"
+                                title="Revoke Admission & Remove"
                               >
-                                <option value="admin">Admin</option>
-                                <option value="member">Member</option>
-                                <option value="read_only">Read Only</option>
-                              </select>
+                                <span className="material-symbols-outlined text-[20px]">person_remove</span>
+                              </button>
                             )}
                           </div>
-
-                          <div className="text-left sm:text-right">
-                            <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Last Login</span>
-                            <span className="text-slate-600 font-bold">{t.lastLogin}</span>
-                          </div>
-
-                          <div className="text-left sm:text-right">
-                            <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">Status</span>
-                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 capitalize">
-                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                              Active
-                            </span>
-                          </div>
-
-                          {t.role !== "owner" && (
-                            <button
-                              onClick={() => handleDeleteTeammate(t.id, t.name)}
-                              className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-auto sm:ml-0 cursor-pointer"
-                              title="Revoke Admission & Remove"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">person_remove</span>
-                            </button>
-                          )}
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Invite Teammate Card */}
+              <div className="lg:col-span-4 space-y-4">
+                <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col gap-4">
+                  <div>
+                    <h4 className="font-heading text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-indigo-600 text-[20px]">person_add</span>
+                      Invite New Teammate
+                    </h4>
+                    <p className="text-slate-400 text-[10px] mt-1 leading-relaxed">
+                      Dispatch role-based invitation credentials. Invitee receives a link to configure their account under your organization namespace.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleInviteSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Email Address</label>
+                      <input
+                        required
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="teammate@company.com"
+                        className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl p-3 text-xs font-semibold outline-none transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Privilege Role</label>
+                      <select
+                        value={inviteRole}
+                        onChange={(e) => setInviteRole(e.target.value)}
+                        className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl p-3 text-xs font-semibold outline-none cursor-pointer transition-all"
+                      >
+                        {user?.role === "owner" && (
+                          <option value="admin">Admin (All privilege except billing)</option>
+                        )}
+                        <option value="member">Member (Write & Edit privilege)</option>
+                        <option value="read_only">Read Only (Observer privilege)</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSendingInvite}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer outline-none"
+                    >
+                      {isSendingInvite ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                          Sending Invite...
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-[16px]">send</span>
+                          Send Invitation Link
+                        </>
+                      )}
+                    </button>
+                  </form>
                 </div>
-              )}
+              </div>
+
             </div>
           )}
 

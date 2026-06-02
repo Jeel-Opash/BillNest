@@ -241,10 +241,55 @@ export const getTeamMembers = async (req, res) => {
 
 export const updateRole = async (req, res) => {
   try {
-    const { role } = req.body;
+    const { role, userId } = req.body;
     if (!role) {
       return res.status(400).json({ success: false, message: "Role is required" });
     }
+
+    const targetUserId = userId || req.user.userId;
+
+    if (targetUserId !== req.user.userId) {
+      if (req.user.role !== "owner" && req.user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "Unauthorized to update teammate roles" });
+      }
+
+      const User = (await import("../models/user.model.js")).default;
+      const targetUser = await User.findById(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: "Teammate not found" });
+      }
+
+      const targetOrgId = targetUser.organization?._id || targetUser.organization || null;
+      const requesterOrgId = req.user.organizationId || null;
+
+      if (!targetOrgId || targetOrgId.toString() !== requesterOrgId?.toString()) {
+        return res.status(403).json({ success: false, message: "Unauthorized to update members of another organization" });
+      }
+
+      targetUser.role = role;
+      await targetUser.save();
+
+      await AuditService.logAction(
+        req.user.organizationId,
+        req.user.userId,
+        "TEAM_MEMBER_ROLE_UPDATED",
+        { targetUserId, targetUserEmail: targetUser.email, newRole: role },
+        req.ip,
+        req.headers["user-agent"]
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Teammate role updated successfully",
+        user: {
+          _id: targetUser._id,
+          name: targetUser.name,
+          email: targetUser.email,
+          role: targetUser.role
+        }
+      });
+    }
+
     const result = await AuthService.updateUserRole(req.user.userId, role);
     res.status(200).json({
       success: true,
@@ -310,7 +355,6 @@ export const processJoinRequestController = async (req, res) => {
     const { action, finalRole, notes } = req.body;
     const request = await AuthService.processJoinRequest(id, req.user.userId, { action, finalRole, notes });
 
-
     await AuditService.logAction(
       req.user.organizationId,
       req.user.userId,
@@ -333,7 +377,6 @@ export const getAccessCodeController = async (req, res) => {
     if (!org) {
       return res.status(404).json({ success: false, message: "Organization not found" });
     }
-
     if (!org.accessCode) {
       org.accessCode = "ORG-" + Math.random().toString(36).substr(2, 6).toUpperCase();
       await org.save();
@@ -347,7 +390,6 @@ export const getAccessCodeController = async (req, res) => {
 export const regenerateAccessCodeController = async (req, res) => {
   try {
     const accessCode = await AuthService.regenerateAccessCode(req.user.organizationId);
-
     await AuditService.logAction(
       req.user.organizationId,
       req.user.userId,

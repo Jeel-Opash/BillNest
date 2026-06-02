@@ -2,6 +2,58 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+/* ─── decoupled reusable input wrapper ─── */
+const Field = ({
+  label,
+  name,
+  type = "text",
+  placeholder,
+  required,
+  icon,
+  rightSlot,
+  hint,
+  formData,
+  touched,
+  errors,
+  onChange,
+  onBlur
+}) => (
+  <div className="space-y-1.5">
+    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+      {label}{required && <span className="text-rose-500 ml-0.5">*</span>}
+    </label>
+    <div className={`relative border rounded-xl bg-slate-50/50 transition-colors ${
+      touched[name] && errors[name]
+        ? "border-rose-300 focus-within:border-rose-400"
+        : "border-slate-200 focus-within:border-indigo-500"
+    }`}>
+      {icon && (
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
+          {icon}
+        </span>
+      )}
+      <input
+        type={type}
+        name={name}
+        placeholder={placeholder}
+        required={required}
+        className={`w-full ${icon ? "pl-9" : "pl-3"} ${rightSlot ? "pr-10" : "pr-3"} py-2.5 bg-transparent text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none rounded-xl`}
+        value={formData[name] || ""}
+        onChange={onChange}
+        onBlur={onBlur}
+      />
+      {rightSlot}
+    </div>
+    {hint && !errors[name] && <p className="text-[9px] text-slate-400 font-medium">{hint}</p>}
+    {touched[name] && errors[name] && (
+      <p className="text-[9px] text-rose-500 font-semibold flex items-center gap-1">
+        <span className="material-symbols-outlined text-[11px]">error</span>
+        {errors[name]}
+      </p>
+    )}
+  </div>
+);
+
 const Register = () => {
   const { register, showToast } = useAuth();
   const navigate = useNavigate();
@@ -129,40 +181,7 @@ const Register = () => {
     }
   };
 
-  /* ─── tiny reusable input wrapper ─── */
-  const Field = ({ label, name, type = "text", placeholder, required, icon, rightSlot, hint }) => (
-    <div className="space-y-1.5">
-      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-        {label}{required && <span className="text-rose-500 ml-0.5">*</span>}
-      </label>
-      <div className={`relative border rounded-xl bg-slate-50/50 transition-colors ${touched[name] && errors[name]
-        ? "border-rose-300 focus-within:border-rose-400"
-        : "border-slate-200 focus-within:border-indigo-500"
-        }`}>
-        {icon && (
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">{icon}</span>
-        )}
-        <input
-          type={type}
-          name={name}
-          placeholder={placeholder}
-          required={required}
-          className={`w-full ${icon ? "pl-9" : "pl-3"} ${rightSlot ? "pr-10" : "pr-3"} py-2.5 bg-transparent text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none rounded-xl`}
-          value={formData[name]}
-          onChange={handleInputChange}
-          onBlur={handleBlur}
-        />
-        {rightSlot}
-      </div>
-      {hint && !errors[name] && <p className="text-[9px] text-slate-400 font-medium">{hint}</p>}
-      {touched[name] && errors[name] && (
-        <p className="text-[9px] text-rose-500 font-semibold flex items-center gap-1">
-          <span className="material-symbols-outlined text-[11px]">error</span>
-          {errors[name]}
-        </p>
-      )}
-    </div>
-  );
+
 
   const strengthColors = ["bg-slate-200", "bg-rose-500", "bg-amber-500", "bg-emerald-500", "bg-teal-500"];
 
@@ -283,14 +302,58 @@ const Register = () => {
 
               {/* Row 1 */}
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Full Name" name="fullName" placeholder="e.g. Jeel Opash" required icon="person" />
-                <Field label="Username" name="username" placeholder="e.g. jeel_opash" required icon="alternate_email" />
+                <Field
+                  label="Full Name"
+                  name="fullName"
+                  placeholder="e.g. Jeel Opash"
+                  required
+                  icon="person"
+                  formData={formData}
+                  touched={touched}
+                  errors={errors}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                />
+                <Field
+                  label="Username"
+                  name="username"
+                  placeholder="e.g. jeel_opash"
+                  required
+                  icon="alternate_email"
+                  formData={formData}
+                  touched={touched}
+                  errors={errors}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                />
               </div>
 
               {/* Row 2 */}
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Work Email" name="email" type="email" placeholder="name@company.com" required icon="mail" />
-                <Field label="Phone" name="phone" placeholder="+91 9876543210" icon="phone" />
+                <Field
+                  label="Work Email"
+                  name="email"
+                  type="email"
+                  placeholder="name@company.com"
+                  required
+                  icon="mail"
+                  formData={formData}
+                  touched={touched}
+                  errors={errors}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                />
+                <Field
+                  label="Phone"
+                  name="phone"
+                  placeholder="+91 9876543210"
+                  icon="phone"
+                  formData={formData}
+                  touched={touched}
+                  errors={errors}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                />
               </div>
 
               {/* Password */}
@@ -349,6 +412,11 @@ const Register = () => {
                 placeholder="Repeat password"
                 required
                 icon="lock"
+                formData={formData}
+                touched={touched}
+                errors={errors}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
               />
 
               {/* Avatar picker */}

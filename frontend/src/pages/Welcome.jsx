@@ -186,32 +186,32 @@ const Welcome = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-700 flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
       
       {/* Background Gradient Blurs */}
-      <div className="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] bg-indigo-100/50 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[600px] h-[600px] bg-emerald-100/40 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-2xl z-10 flex flex-col gap-6">
         
         {/* Top Header */}
         <div className="text-center">
-          <div className="flex justify-center items-center gap-2 mb-2">
-            <span className="material-symbols-outlined text-[42px] text-indigo-400 bg-indigo-500/15 p-2 rounded-2xl animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
+          <div className="flex justify-center items-center gap-2.5 mb-2">
+            <span className="material-symbols-outlined text-[42px] text-indigo-600 bg-indigo-50 p-2.5 rounded-2xl shadow-sm animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
               verified_user
             </span>
-            <span className="text-3xl font-black font-heading tracking-tight text-white">BillNest</span>
+            <span className="text-3xl font-black font-heading tracking-tight text-slate-900">BillNest</span>
           </div>
-          <p className="text-slate-400 text-sm max-w-md mx-auto mt-2">
-            Hi, <span className="text-indigo-300 font-bold">{user?.name}</span>! Welcome to the secure multi-tenant billing workspace. Let's initialize your team access.
+          <p className="text-slate-500 text-sm max-w-md mx-auto mt-2">
+            Hi, <span className="text-indigo-600 font-bold">{user?.name}</span>! Welcome to the secure multi-tenant billing workspace. Let's initialize your team access.
           </p>
         </div>
 
         {/* Phase View: Choose */}
         {phase === "choose" && (
-          <div className="bg-slate-950/70 backdrop-blur-xl border border-slate-800 p-8 sm:p-10 rounded-3xl shadow-2xl flex flex-col gap-8 transition-all duration-300">
+          <div className="bg-white border border-slate-200/60 p-8 sm:p-10 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col gap-8 transition-all duration-300">
             <div>
-              <h3 className="text-xl font-black text-white text-center">Setup Workspace Gateway</h3>
+              <h3 className="text-xl font-black text-slate-900 text-center">Setup Workspace Gateway</h3>
               <p className="text-xs text-slate-400 text-center mt-1">Select one of the two self-service actions below to proceed.</p>
             </div>
 
@@ -219,18 +219,18 @@ const Welcome = () => {
               {/* Option A: Create Org */}
               <div 
                 onClick={() => setPhase("create")}
-                className="group bg-slate-900 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-6 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 flex flex-col gap-4 shadow-lg text-left"
+                className="group bg-slate-50/50 hover:bg-indigo-50/20 border border-slate-200/60 hover:border-indigo-300 p-6 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 flex flex-col gap-4 shadow-sm text-left"
               >
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300 shadow-md">
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 shadow-sm">
                   <span className="material-symbols-outlined text-[28px]">add_business</span>
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-sm group-hover:text-indigo-300 transition-colors">A. Create New Organization</h4>
-                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                  <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">A. Create New Organization</h4>
+                  <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
                     Initialize a fresh database-isolated workspace. You'll be assigned the role of <strong>Owner</strong> and can manage clients, products, and invite administrators.
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-black mt-auto pt-2 opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                <div className="flex items-center gap-1.5 text-xs text-indigo-600 font-black mt-auto pt-2 opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
                   Initialize Workspace <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                 </div>
               </div>
@@ -238,28 +238,28 @@ const Welcome = () => {
               {/* Option B: Join Org */}
               <div 
                 onClick={() => setPhase("join")}
-                className="group bg-slate-900 hover:bg-emerald-950/30 border border-slate-800 hover:border-emerald-500/50 p-6 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 flex flex-col gap-4 shadow-lg text-left"
+                className="group bg-slate-50/50 hover:bg-emerald-50/20 border border-slate-200/60 hover:border-emerald-300 p-6 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 flex flex-col gap-4 shadow-sm text-left"
               >
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-md">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm">
                   <span className="material-symbols-outlined text-[28px]">group_add</span>
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-sm group-hover:text-emerald-300 transition-colors">B. Join Existing Organization</h4>
-                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                  <h4 className="font-bold text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">B. Join Existing Organization</h4>
+                  <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
                     Enter an active organization's unique access code, request your target privilege role (Member or Read-Only), and submit a request to their administrators.
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-black mt-auto pt-2 opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-black mt-auto pt-2 opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
                   Request Admission <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-800/80 pt-6 flex justify-between items-center text-xs">
-              <span className="text-slate-500 font-semibold">Signed in as {user?.email}</span>
+            <div className="border-t border-slate-100 pt-6 flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-semibold">Signed in as {user?.email}</span>
               <button 
                 onClick={() => logout()} 
-                className="text-rose-400 font-bold hover:underline flex items-center gap-1 cursor-pointer outline-none bg-transparent border-none"
+                className="text-rose-500 font-bold hover:underline flex items-center gap-1 cursor-pointer outline-none bg-transparent border-none"
               >
                 <span className="material-symbols-outlined text-[14px]">logout</span> Sign Out
               </button>
@@ -269,16 +269,16 @@ const Welcome = () => {
 
         {/* Phase View: Create Org Flow */}
         {phase === "create" && (
-          <div className="bg-slate-950/70 backdrop-blur-xl border border-slate-800 p-8 rounded-3xl shadow-2xl transition-all duration-300">
+          <div className="bg-white border border-slate-200/60 p-8 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] transition-all duration-300">
             <div className="flex items-center gap-3 mb-6">
               <button 
                 onClick={() => setPhase("choose")}
-                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer outline-none"
+                className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer outline-none"
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               </button>
               <div>
-                <h3 className="text-lg font-black text-white">Create Workspace Profile</h3>
+                <h3 className="text-lg font-black text-slate-900">Create Workspace Profile</h3>
                 <p className="text-xs text-slate-400">Deploy a tenant context onto our SaaS billing architecture</p>
               </div>
             </div>
@@ -286,21 +286,21 @@ const Welcome = () => {
             <form onSubmit={handleCreateOrgSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Organization Name *</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Organization Name *</label>
                   <input 
                     type="text" 
                     required 
                     placeholder="e.g. Acme Corp" 
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.name}
                     onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Industry</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Industry</label>
                   <select 
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.industry}
                     onChange={(e) => setOrgForm({ ...orgForm, industry: e.target.value })}
                   >
@@ -311,9 +311,9 @@ const Welcome = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Business Type</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Business Type</label>
                   <select 
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.businessType}
                     onChange={(e) => setOrgForm({ ...orgForm, businessType: e.target.value })}
                   >
@@ -324,9 +324,9 @@ const Welcome = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Country</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Country</label>
                   <select 
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.country}
                     onChange={(e) => setOrgForm({ ...orgForm, country: e.target.value })}
                   >
@@ -337,9 +337,9 @@ const Welcome = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Currency</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Currency</label>
                   <select 
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.currency}
                     onChange={(e) => setOrgForm({ ...orgForm, currency: e.target.value })}
                   >
@@ -350,9 +350,9 @@ const Welcome = () => {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Timezone</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Timezone</label>
                   <select 
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.timezone}
                     onChange={(e) => setOrgForm({ ...orgForm, timezone: e.target.value })}
                   >
@@ -372,7 +372,7 @@ const Welcome = () => {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-lg outline-none mt-4"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-sm outline-none mt-4 border-none"
               >
                 {loading ? "Configuring Tenant Workspace..." : "Create Organization"}
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -383,41 +383,41 @@ const Welcome = () => {
 
         {/* Phase View: Join Org Flow */}
         {phase === "join" && (
-          <div className="bg-slate-950/70 backdrop-blur-xl border border-slate-800 p-8 rounded-3xl shadow-2xl transition-all duration-300">
+          <div className="bg-white border border-slate-200/60 p-8 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] transition-all duration-300">
             <div className="flex items-center gap-3 mb-6">
               <button 
                 onClick={() => setPhase("choose")}
-                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer outline-none"
+                className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer outline-none"
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               </button>
               <div>
-                <h3 className="text-lg font-black text-white">Join Existing Workspace</h3>
+                <h3 className="text-lg font-black text-slate-900">Join Existing Workspace</h3>
                 <p className="text-xs text-slate-400">Request admission via a workspace-specific code</p>
               </div>
             </div>
 
             <form onSubmit={handleJoinOrgSubmit} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Organization Access Code *</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Organization Access Code *</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
                     vpn_key
                   </span>
                   <input 
                     type="text" 
                     required 
                     placeholder="e.g. ORG-A1B2 or 4-digit code" 
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors uppercase font-mono"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all uppercase font-mono font-bold"
                     value={joinForm.accessCode}
                     onChange={(e) => setJoinForm({ ...joinForm, accessCode: e.target.value })}
                   />
                 </div>
-                <span className="text-[10px] text-slate-500 mt-1 block">Ask your organization's Owner or Admin for their 4-digit unique code.</span>
+                <span className="text-[9px] text-slate-400 font-medium mt-1 block">Ask your organization's Owner or Admin for their 4-digit unique code.</span>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Requested Privilege Role *</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Requested Privilege Role *</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { id: "member", title: "Member", desc: "Create/Edit invoices, view active plans.", icon: "person" },
@@ -430,15 +430,15 @@ const Welcome = () => {
                         onClick={() => setJoinForm({ ...joinForm, role: r.id })}
                         className={`p-3.5 rounded-xl border cursor-pointer flex flex-col gap-2 transition-all ${
                           isSel 
-                            ? "bg-emerald-950/20 border-emerald-500/80 text-emerald-400" 
-                            : "bg-slate-900 border-slate-800 hover:bg-slate-800/50 text-slate-400 hover:text-slate-200"
+                            ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm" 
+                            : "bg-slate-50/50 border-slate-200 hover:bg-slate-100/50 text-slate-500 hover:text-slate-800"
                         }`}
                       >
                         <div className="flex justify-between items-center">
-                          <h4 className="font-bold text-xs text-slate-200">{r.title}</h4>
+                          <h4 className={`font-bold text-xs ${isSel ? "text-emerald-700" : "text-slate-700"}`}>{r.title}</h4>
                           <span className="material-symbols-outlined text-[16px]">{r.icon}</span>
                         </div>
-                        <p className="text-[9px] leading-relaxed opacity-70">{r.desc}</p>
+                        <p className="text-[9px] leading-relaxed opacity-80">{r.desc}</p>
                       </div>
                     );
                   })}
@@ -446,10 +446,10 @@ const Welcome = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Optional Introduction Message</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Optional Introduction Message</label>
                 <textarea 
                   placeholder="Tell the owner why you are requesting admission..." 
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors h-20 resize-none"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all h-20 resize-none font-semibold"
                   value={joinForm.message}
                   onChange={(e) => setJoinForm({ ...joinForm, message: e.target.value })}
                 />
@@ -458,7 +458,7 @@ const Welcome = () => {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-lg outline-none mt-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-sm outline-none mt-2 border-none"
               >
                 {loading ? "Submitting Access Request..." : "Request Workspace Admission"}
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -469,46 +469,46 @@ const Welcome = () => {
 
         {/* Phase View: Pending Approval Page */}
         {phase === "pending" && activePendingRequest && (
-          <div className="bg-slate-950/70 backdrop-blur-xl border border-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col gap-6 transition-all duration-300">
+          <div className="bg-white border border-slate-200/60 p-8 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col gap-6 transition-all duration-300">
             
             <div className="text-center flex flex-col items-center gap-4 py-4">
-              <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center animate-pulse duration-1000">
+              <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200/60 flex items-center justify-center animate-pulse duration-1000">
                 <span className="material-symbols-outlined text-amber-500 text-[36px]">hourglass_empty</span>
               </div>
               
               <div>
-                <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[9px] font-black uppercase rounded-full px-3 py-1 tracking-wider inline-block select-none animate-pulse">
+                <span className="bg-amber-50 text-amber-600 border border-amber-200/50 text-[9px] font-black uppercase rounded-full px-3 py-1 tracking-wider inline-block select-none animate-pulse">
                   Pending Owner Approval
                 </span>
-                <h3 className="text-xl font-black text-white mt-3">Access Request Pending</h3>
+                <h3 className="text-xl font-black text-slate-900 mt-3">Access Request Pending</h3>
                 <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto leading-relaxed">
-                  Your request to join <strong className="text-slate-100">{activePendingRequest.organization?.name}</strong> is awaiting authorization from their administrative workspace.
+                  Your request to join <strong className="text-slate-800 font-bold">{activePendingRequest.organization?.name}</strong> is awaiting authorization from their administrative workspace.
                 </p>
               </div>
             </div>
 
             {/* Request Summary Info */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5 text-xs text-left">
-              <h4 className="font-bold text-white text-[10px] uppercase tracking-wider text-slate-400">Request Credentials Summary</h4>
-              <div className="grid grid-cols-2 gap-4 border-t border-slate-800/80 pt-3">
+            <div className="bg-slate-50/50 border border-slate-200/60 rounded-2xl p-5 space-y-3.5 text-xs text-left">
+              <h4 className="font-bold text-slate-400 text-[10px] uppercase tracking-wider">Request Credentials Summary</h4>
+              <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-3">
                 <div>
-                  <span className="text-slate-500 block text-[9px] uppercase tracking-wider">Workspace Organization</span>
-                  <span className="text-slate-200 font-bold mt-0.5 block">{activePendingRequest.organization?.name}</span>
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Workspace Organization</span>
+                  <span className="text-slate-800 font-bold mt-0.5 block">{activePendingRequest.organization?.name}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[9px] uppercase tracking-wider">Requested Privilege</span>
-                  <span className="text-indigo-400 font-bold mt-0.5 block uppercase">{activePendingRequest.role}</span>
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Requested Privilege</span>
+                  <span className="text-indigo-600 font-bold mt-0.5 block uppercase">{activePendingRequest.role}</span>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-slate-500 block text-[9px] uppercase tracking-wider">Submitted On</span>
-                  <span className="text-slate-300 font-semibold mt-0.5 block">
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Submitted On</span>
+                  <span className="text-slate-600 font-semibold mt-0.5 block">
                     {new Date(activePendingRequest.createdAt).toLocaleString()}
                   </span>
                 </div>
                 {activePendingRequest.message && (
                   <div className="col-span-2">
-                    <span className="text-slate-500 block text-[9px] uppercase tracking-wider">Your Message</span>
-                    <p className="text-slate-300 italic mt-0.5 bg-slate-950 p-2.5 rounded-lg border border-slate-800/60 leading-normal">
+                    <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Your Message</span>
+                    <p className="text-slate-600 italic mt-0.5 bg-white p-2.5 rounded-lg border border-slate-200 leading-normal">
                       "{activePendingRequest.message}"
                     </p>
                   </div>
@@ -521,7 +521,7 @@ const Welcome = () => {
               <button 
                 onClick={handleManualRefresh}
                 disabled={loading}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-md outline-none border border-slate-800"
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-sm outline-none border border-slate-200"
               >
                 <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
                 {loading ? "Checking..." : "Refresh Authorization Status"}
@@ -530,18 +530,18 @@ const Welcome = () => {
               <button 
                 onClick={() => handleCancelRequest(activePendingRequest._id)}
                 disabled={loading}
-                className="w-full bg-rose-950/20 hover:bg-rose-900/30 text-rose-400 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-md outline-none border border-rose-900/40"
+                className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-sm outline-none border border-rose-200"
               >
                 <span className="material-symbols-outlined text-[16px]">cancel</span>
                 Cancel Request
               </button>
             </div>
 
-            <div className="border-t border-slate-800/80 pt-4 flex justify-between items-center text-xs">
-              <span className="text-slate-500">Need to try a different access code?</span>
+            <div className="border-t border-slate-100 pt-4 flex justify-between items-center text-xs">
+              <span className="text-slate-400">Need to try a different access code?</span>
               <button 
                 onClick={() => logout()}
-                className="text-rose-400 font-bold hover:underline flex items-center gap-1 cursor-pointer outline-none bg-transparent border-none"
+                className="text-rose-500 font-bold hover:underline flex items-center gap-1 cursor-pointer outline-none bg-transparent border-none font-sans"
               >
                 <span className="material-symbols-outlined text-[14px]">logout</span> Sign Out
               </button>

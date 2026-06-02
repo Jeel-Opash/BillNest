@@ -24,11 +24,11 @@ const Register = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const avatarPresets = [
-    { name: "Tech Owl",     emoji: "🦉" },
-    { name: "Admin Ninja",  emoji: "🥷" },
-    { name: "Code Wizard",  emoji: "🧙" },
+    { name: "Tech Owl", emoji: "🦉" },
+    { name: "Admin Ninja", emoji: "🥷" },
+    { name: "Code Wizard", emoji: "🧙" },
     { name: "Finance Lion", emoji: "🦁" },
-    { name: "SaaS Rocket",  emoji: "🚀" },
+    { name: "SaaS Rocket", emoji: "🚀" },
   ];
 
   const evaluatePasswordStrength = (pass) => {
@@ -39,10 +39,10 @@ const Register = () => {
     if (/[0-9]/.test(pass)) score++;
     if (/[^A-Za-z0-9]/.test(pass)) score++;
     const map = [
-      { text: "Too weak",  color: "bg-rose-500" },
-      { text: "Weak",      color: "bg-rose-400" },
-      { text: "Medium",    color: "bg-amber-500" },
-      { text: "Strong",    color: "bg-emerald-500" },
+      { text: "Too weak", color: "bg-rose-500" },
+      { text: "Weak", color: "bg-rose-400" },
+      { text: "Medium", color: "bg-amber-500" },
+      { text: "Strong", color: "bg-emerald-500" },
       { text: "Excellent", color: "bg-teal-500" },
     ];
     return { score, ...map[score] };
@@ -99,53 +99,14 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-
-
-    const syncErrors = {};
-    const getErr = (name, value) => {
-      if (name === "fullName") {
-        if (!value) return "Full name is required.";
-        if (value.length < 3) return "Must be at least 3 characters.";
-      }
-      if (name === "username") {
-        if (!value) return "Username is required.";
-        if (value.length < 3) return "Must be at least 3 characters.";
-        if (!/^[A-Za-z0-9_]+$/.test(value)) return "Letters, numbers, and underscores only.";
-      }
-      if (name === "email") {
-        if (!value) return "Email is required.";
-        if (!/\S+@\S+\.\S+/.test(value)) return "Enter a valid email address.";
-      }
-      if (name === "password") {
-        if (!value) return "Password is required.";
-        if (value.length < 8) return "Must be at least 8 characters.";
-      }
-      if (name === "confirmPassword") {
-        if (value !== formData.password) return "Passwords do not match.";
-      }
-      if (name === "phone") {
-        if (value && !/^\+?[0-9\s-]{8,15}$/.test(value)) return "Enter a valid phone number.";
-      }
-      return "";
-    };
-
-
     const allTouched = {};
-    Object.keys(formData).forEach(k => {
-      allTouched[k] = true;
-      const err = getErr(k, formData[k]);
-      if (err) syncErrors[k] = err;
-    });
+    Object.keys(formData).forEach(k => { allTouched[k] = true; validateField(k, formData[k]); });
     setTouched(allTouched);
-    setErrors(prev => ({ ...prev, ...syncErrors }));
-
-    if (Object.keys(syncErrors).length > 0 || !agreeTerms) {
+    const hasErrors = Object.values(errors).some(err => !!err);
+    if (hasErrors || !agreeTerms) {
       if (!agreeTerms) showToast("You must agree to the Terms of Service.", "warning");
-      else showToast("Please fix the highlighted errors before submitting.", "error");
       return;
     }
-
     try {
       setIsSubmitting(true);
       const res = await register(
@@ -174,11 +135,10 @@ const Register = () => {
       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
         {label}{required && <span className="text-rose-500 ml-0.5">*</span>}
       </label>
-      <div className={`relative border rounded-xl bg-slate-50/50 transition-colors ${
-        touched[name] && errors[name]
-          ? "border-rose-300 focus-within:border-rose-400"
-          : "border-slate-200 focus-within:border-indigo-500"
-      }`}>
+      <div className={`relative border rounded-xl bg-slate-50/50 transition-colors ${touched[name] && errors[name]
+        ? "border-rose-300 focus-within:border-rose-400"
+        : "border-slate-200 focus-within:border-indigo-500"
+        }`}>
         {icon && (
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">{icon}</span>
         )}
@@ -324,7 +284,7 @@ const Register = () => {
               {/* Row 1 */}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Full Name" name="fullName" placeholder="e.g. Jeel Opash" required icon="person" />
-                <Field label="Username"  name="username"  placeholder="e.g. jeel_opash" required icon="alternate_email" />
+                <Field label="Username" name="username" placeholder="e.g. jeel_opash" required icon="alternate_email" />
               </div>
 
               {/* Row 2 */}
@@ -338,9 +298,8 @@ const Register = () => {
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Password <span className="text-rose-500">*</span>
                 </label>
-                <div className={`relative border rounded-xl bg-slate-50/50 transition-colors ${
-                  touched.password && errors.password ? "border-rose-300" : "border-slate-200 focus-within:border-indigo-500"
-                }`}>
+                <div className={`relative border rounded-xl bg-slate-50/50 transition-colors ${touched.password && errors.password ? "border-rose-300" : "border-slate-200 focus-within:border-indigo-500"
+                  }`}>
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">lock</span>
                   <input
                     type={showPassword ? "text" : "password"}
@@ -365,7 +324,7 @@ const Register = () => {
                 {formData.password && (
                   <div className="space-y-1 mt-1.5">
                     <div className="flex gap-1 h-1">
-                      {[0,1,2,3].map(i => (
+                      {[0, 1, 2, 3].map(i => (
                         <div key={i} className={`flex-1 rounded-full transition-all ${i < passwordStrength.score ? passwordStrength.color : "bg-slate-100"}`} />
                       ))}
                     </div>
@@ -406,11 +365,10 @@ const Register = () => {
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, avatar: preset.emoji }))}
                         title={preset.name}
-                        className={`w-9 h-9 rounded-xl text-base flex items-center justify-center transition-all border cursor-pointer ${
-                          isSelected
-                            ? "bg-indigo-50 border-indigo-400 shadow-sm scale-110"
-                            : "bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-slate-100"
-                        }`}
+                        className={`w-9 h-9 rounded-xl text-base flex items-center justify-center transition-all border cursor-pointer ${isSelected
+                          ? "bg-indigo-50 border-indigo-400 shadow-sm scale-110"
+                          : "bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-slate-100"
+                          }`}
                       >
                         {preset.emoji}
                       </button>

@@ -1,12 +1,19 @@
 import jwt from "jsonwebtoken";
 import ApiKey from "../models/apiKey.model.js";
+import SettingsService from "../services/settings.service.js";
 
 const authMiddleware = async (req, res, next) => {
   try {
 
-    const apiKey = req.headers["x-api-key"];
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : "";
+    const apiKey = req.headers["x-api-key"] || (bearerToken?.startsWith("saas_") ? bearerToken : "");
     if (apiKey) {
-      const activeKey = await ApiKey.findOne({ key: apiKey, isActive: true });
+      const keyHash = SettingsService.hashKey(apiKey);
+      const activeKey = await ApiKey.findOne({
+        $or: [{ keyHash }, { key: apiKey }],
+        isActive: true,
+      });
       if (!activeKey) {
         return res.status(401).json({
           success: false,
@@ -17,15 +24,16 @@ const authMiddleware = async (req, res, next) => {
 
       req.user = {
         organizationId: activeKey.organization.toString(),
+        tenantId: activeKey.organization.toString(),
         role: "admin",
         isApiKey: true,
+        apiKeyId: activeKey._id,
       };
 
       return next();
     }
 
 
-    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
@@ -38,7 +46,8 @@ const authMiddleware = async (req, res, next) => {
 
     req.user = {
       userId: decoded.userId,
-      organizationId: decoded.organizationId,
+      organizationId: decoded.organizationId || decoded.tenantId,
+      tenantId: decoded.tenantId || decoded.organizationId,
       role: decoded.role,
       isApiKey: false,
     };

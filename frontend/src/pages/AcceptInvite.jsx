@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { User, Lock, ArrowRight, ShieldCheck, Mail, Briefcase } from "lucide-react";
-import axios from "axios";
 
 const AcceptInvite = () => {
   const [searchParams] = useSearchParams();
@@ -12,12 +10,10 @@ const AcceptInvite = () => {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [inviteDetails, setInviteDetails] = useState(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { acceptInvite, showToast } = useAuth();
-
 
   useEffect(() => {
     if (!token) {
@@ -34,7 +30,6 @@ const AcceptInvite = () => {
       showToast("Passwords do not match.", "error");
       return;
     }
-
     if (password.length < 8) {
       showToast("Password must be at least 8 characters long.", "error");
       return;
@@ -54,111 +49,94 @@ const AcceptInvite = () => {
   };
 
   return (
-    <div className="auth-page">
-      <div 
-        className="floating-bg-circle" 
-        style={{
-          width: "400px",
-          height: "400px",
-          top: "15%",
-          right: "15%",
-          background: "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0) 70%)"
-        }}
-      />
+    <div className="min-h-screen bg-background text-on-background flex flex-col justify-center items-center p-6 relative overflow-hidden">
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary-fixed/20 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="auth-container animate-fade-in">
-        <div className="auth-header">
-          <div className="auth-logo">
-            <ShieldCheck size={32} style={{ color: "var(--accent-secondary)", filter: "drop-shadow(0 0 8px rgba(168, 85, 247, 0.5))" }} />
-            <span>BillNest Team</span>
+      <div className="w-full max-w-md z-10 flex flex-col gap-6">
+        <div className="text-center">
+          <div className="flex justify-center items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-[36px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
+            <span className="text-headline-lg font-heading font-bold text-on-background">BillNest</span>
           </div>
-          <p className="auth-subtitle">Accept Invitation & Set Up Profile</p>
+          <p className="text-on-surface-variant text-body-md">Accept your workspace invitation</p>
         </div>
 
-        <div className="glass-panel auth-card">
-          <h2 style={{ fontSize: "1.5rem", marginBottom: "8px", fontWeight: "700" }}>Join Organization</h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem", marginBottom: "28px" }}>
-            Create your account credentials to join your team workspace.
-          </p>
+        <div className="bg-surface-container-lowest border border-outline-variant p-8 rounded-2xl shadow-lg flex flex-col gap-6">
+          <div>
+            <h3 className="text-headline-md text-on-surface font-bold text-center">Join Organization</h3>
+            <p className="text-xs text-on-surface-variant text-center mt-1">
+              Create your account credentials to join your team workspace.
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="name">Display Name</label>
-              <div className="input-wrapper">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-label-sm font-bold text-on-surface-variant mb-1">Display Name</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">person</span>
                 <input
-                  id="name"
                   type="text"
                   required
                   placeholder="e.g. Rohini Sharma"
-                  className="form-input has-icon"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 text-body-sm focus:ring-2 focus:ring-primary/20 outline-none"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
-                <User size={18} className="form-input-icon" />
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">Create Password</label>
-              <div className="input-wrapper">
+            <div>
+              <label className="block text-label-sm font-bold text-on-surface-variant mb-1">Create Password</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">lock</span>
                 <input
-                  id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="Minimum 8 characters"
-                  className="form-input has-icon"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-12 py-3 text-body-sm focus:ring-2 focus:ring-primary/20 outline-none"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <Lock size={18} className="form-input-icon" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">{showPassword ? "visibility_off" : "visibility"}</span>
+                </button>
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
-              <div className="input-wrapper">
+            <div>
+              <label className="block text-label-sm font-bold text-on-surface-variant mb-1">Confirm Password</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">lock</span>
                 <input
-                  id="confirmPassword"
                   type="password"
                   required
                   placeholder="Repeat your password"
-                  className="form-input has-icon"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 text-body-sm focus:ring-2 focus:ring-primary/20 outline-none"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
-                <Lock size={18} className="form-input-icon" />
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn btn-primary btn-block"
-              style={{ marginTop: "8px" }}
+              className="w-full bg-primary text-on-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-opacity disabled:opacity-60"
             >
-              {isSubmitting ? (
-                <div style={{
-                  width: "20px",
-                  height: "20px",
-                  border: "2px solid rgba(255, 255, 255, 0.2)",
-                  borderTopColor: "#fff",
-                  borderRadius: "50%",
-                  animation: "spin-slow 0.8s linear infinite"
-                }} />
-              ) : (
-                <>
-                  Complete Account Setup <ArrowRight size={18} />
-                </>
-              )}
+              {isSubmitting ? "Setting up account..." : "Complete Account Setup"}
+              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           </form>
-        </div>
 
-        <div className="auth-footer-text">
-          Want to access an existing account?{" "}
-          <span style={{ cursor: "pointer" }} onClick={() => navigate("/login")} className="auth-link">
-            Log In
-          </span>
+          <p className="text-center text-xs text-on-surface-variant">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary font-bold hover:underline">Sign In</Link>
+          </p>
         </div>
       </div>
     </div>

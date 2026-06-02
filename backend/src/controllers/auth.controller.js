@@ -87,6 +87,14 @@ export const logout = async (req, res) => {
 export const inviteTeammate = async (req, res) => {
   try {
     const { email, role } = req.body;
+
+    if (req.user.role === "admin" && (role === "owner" || role === "admin")) {
+      return res.status(403).json({
+        success: false,
+        message: "Access Denied: Admins are not allowed to invite or assign Owner or Admin roles.",
+      });
+    }
+
     const invitation = await AuthService.inviteTeammate({
       email,
       role,
@@ -227,6 +235,26 @@ export const getTeamMembers = async (req, res) => {
     res.status(200).json({ success: true, members });
   } catch (error) {
     console.error("Get Team Members Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const updateRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!role) {
+      return res.status(400).json({ success: false, message: "Role is required" });
+    }
+    const result = await AuthService.updateUserRole(req.user.userId, role);
+    res.status(200).json({
+      success: true,
+      message: "Role updated successfully",
+      user: result.user,
+      token: result.accessToken,
+      refreshToken: result.refreshToken
+    });
+  } catch (error) {
+    console.error("Update Role Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

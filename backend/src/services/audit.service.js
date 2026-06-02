@@ -13,9 +13,14 @@ class AuditService {
   async logAction(organizationId, userId, action, details = {}, ipAddress = "", userAgent = "") {
     try {
       await AuditLog.create({
+        tenantId: organizationId,
         organization: organizationId,
+        userId: userId,
         user: userId,
+        userEmail: "system@billnest.com",
         action,
+        resourceType: details.resourceType || action.split("_")[0].toLowerCase() || "other",
+        resourceId: details.resourceId || details.clientId || details.invoiceId || new (await import("mongoose")).default.Types.ObjectId(),
         details,
         ipAddress,
         userAgent,

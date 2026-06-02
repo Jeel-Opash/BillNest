@@ -7,6 +7,8 @@ import {
   getClientById,
   updateClient,
   deleteClient,
+  getClientInvoices,
+  getClientSubscriptions,
 } from "../controllers/client.controller.js";
 
 const router = express.Router();
@@ -14,8 +16,10 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.post("/", createClient);
+router.post("/", roleMiddleware("owner", "admin", "member"), createClient);
 router.get("/", getClients);
+router.get("/:id/invoices", getClientInvoices);
+router.get("/:id/subscriptions", getClientSubscriptions);
 router.get("/:id", getClientById);
 router.put("/:id", roleMiddleware("owner", "admin", "member"), updateClient);
 router.delete("/:id", roleMiddleware("owner", "admin"), deleteClient);

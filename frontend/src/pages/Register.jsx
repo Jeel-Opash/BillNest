@@ -8,6 +8,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [selectedRole, setSelectedRole] = useState("owner");
+  const [organizationName, setOrganizationName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register } = useAuth();
@@ -16,11 +17,12 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!fullName || !email || !password || !agreeTerms) return;
+    if (selectedRole === "owner" && !organizationName) return;
 
     try {
       setIsSubmitting(true);
-      const defaultOrgName = `${fullName}'s Workspace`;
-      const res = await register(defaultOrgName, fullName, email, password, selectedRole);
+      const finalOrgName = selectedRole === "owner" ? organizationName : `${fullName}'s Workspace`;
+      const res = await register(finalOrgName, fullName, email, password, selectedRole);
       if (res.success) {
         navigate("/dashboard");
       }
@@ -87,7 +89,7 @@ const Register = () => {
               </div>
             </div>
 
-            <div>
+             <div>
               <label className="block text-label-sm font-bold text-on-surface-variant mb-1">Password</label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">lock</span>
@@ -102,13 +104,29 @@ const Register = () => {
               </div>
             </div>
 
+            {selectedRole === "owner" && (
+              <div className="animate-fade-in transition-all">
+                <label className="block text-label-sm font-bold text-on-surface-variant mb-1">Organization Name</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">corporate_fare</span>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="e.g. Acme Corporation" 
+                    className="w-full bg-surface-container-low border-outline-variant rounded-lg pl-10 pr-4 py-3 text-body-sm focus:ring-2 focus:ring-primary/20" 
+                    value={organizationName}
+                    onChange={(e) => setOrganizationName(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="block text-label-sm font-bold text-on-surface-variant">Workspace Privilege Assignment</label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  { id: "owner", title: "Owner", desc: "Root billing admin", symbol: "crown" },
-                  { id: "member", title: "Member", desc: "Create invoices", symbol: "groups" },
-                  { id: "read_only", title: "Read Only", desc: "Auditor observer", symbol: "visibility" }
+                  { id: "owner", title: "Owner", desc: "Initialize new organization", symbol: "crown" },
+                  { id: "member", title: "Member", desc: "Join an existing workspace", symbol: "groups" }
                 ].map(role => {
                   const isSelected = selectedRole === role.id;
                   return (

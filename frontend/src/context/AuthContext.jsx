@@ -69,9 +69,14 @@ export const AuthProvider = ({ children }) => {
             }
           }
         } catch (error) {
-          console.error("Silent refresh failed on startup:", error);
-          if (!savedAccessToken || (error.response && (error.response.status === 401 || error.response.status === 403))) {
-            logout();
+          if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            console.warn("Session expired on startup. Logging out silently.");
+            logout(true);
+          } else {
+            console.error("Silent refresh failed on startup:", error);
+            if (!savedAccessToken) {
+              logout(true);
+            }
           }
         }
       }
@@ -232,9 +237,9 @@ export const AuthProvider = ({ children }) => {
   };
 
 
-  const logout = async () => {
+  const logout = async (isSilent = false) => {
     const savedRefreshToken = localStorage.getItem("bn_refresh_token");
-    if (savedRefreshToken) {
+    if (savedRefreshToken && !isSilent) {
       try {
         await axios.post("/auth/logout", { refreshToken: savedRefreshToken });
       } catch (error) {
@@ -249,7 +254,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("bn_access_token");
     localStorage.removeItem("bn_user");
     localStorage.removeItem("bn_workspaces");
-    showToast("Logged out successfully.", "info");
+    if (!isSilent) {
+      showToast("Logged out successfully.", "info");
+    }
   };
 
 
@@ -331,7 +338,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("billnest_invitations", JSON.stringify(updated));
   };
 
-  const acceptLocalInvitation = (inviteId) => {
+  const acceptLocalInvitation = async (inviteId) => {
     const updatedInvites = localInvitations.map(inv =>
       inv.id === inviteId ? { ...inv, status: "accepted" } : inv
     );
@@ -340,17 +347,32 @@ export const AuthProvider = ({ children }) => {
 
     const targetInvite = localInvitations.find(inv => inv.id === inviteId);
     if (targetInvite && user) {
-      const updatedUser = {
-        ...user,
-        role: targetInvite.role,
-        organization: {
-          ...user.organization,
-          name: targetInvite.orgName
+      try {
+        const res = await axios.put("/auth/update-role", { role: targetInvite.role });
+        if (res.data.success) {
+          const { user: updatedUser, token: newAccessToken, refreshToken: newRefreshToken } = res.data;
+          setToken(newAccessToken);
+          setUser(updatedUser);
+          localStorage.setItem("bn_access_token", newAccessToken);
+          localStorage.setItem("bn_refresh_token", newRefreshToken);
+          localStorage.setItem("bn_user", JSON.stringify(updatedUser));
+          showToast(`Invitation accepted! You are now an ${targetInvite.role.toUpperCase()} of ${targetInvite.orgName}.`, "success");
         }
-      };
-      setUser(updatedUser);
-      localStorage.setItem("bn_user", JSON.stringify(updatedUser));
-      showToast(`Invitation accepted! You are now an ${targetInvite.role.toUpperCase()} of ${targetInvite.orgName}.`, "success");
+      } catch (err) {
+        console.error("Failed to persist role in backend database:", err);
+        // Fallback to local update if API fails
+        const updatedUser = {
+          ...user,
+          role: targetInvite.role,
+          organization: {
+            ...user.organization,
+            name: targetInvite.orgName
+          }
+        };
+        setUser(updatedUser);
+        localStorage.setItem("bn_user", JSON.stringify(updatedUser));
+        showToast(`Invitation accepted locally! (DB update offline)`, "warning");
+      }
     }
   };
 
@@ -361,6 +383,25 @@ export const AuthProvider = ({ children }) => {
     setLocalInvitations(updatedInvites);
     localStorage.setItem("billnest_invitations", JSON.stringify(updatedInvites));
     showToast("Invitation declined.", "info");
+  };
+
+  const simulateLoginAs = (email, role, orgName, orgId = "org_mock") => {
+    const mockUser = {
+      _id: "usr_" + Math.random().toString(36).substr(2, 9),
+      name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
+      email: email,
+      role: role,
+      organization: {
+        _id: orgId,
+        name: orgName,
+        slug: orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+        plan: "pro"
+      },
+      tenantId: orgId
+    };
+    setUser(mockUser);
+    localStorage.setItem("bn_user", JSON.stringify(mockUser));
+    showToast(`Session switched to ${role.toUpperCase()}: ${email}`, "success");
   };
 
   return (
@@ -381,7 +422,8 @@ export const AuthProvider = ({ children }) => {
         localInvitations,
         addLocalInvitation,
         acceptLocalInvitation,
-        declineLocalInvitation
+        declineLocalInvitation,
+        simulateLoginAs
       }}
     >
       {children}
@@ -401,7 +443,7 @@ export const AuthProvider = ({ children }) => {
                   <span className="material-symbols-outlined text-amber-500 text-[20px]">warning</span>
                 )}
                 {toast.type === "info" && (
-                  <span className="material-symbols-outlined text-indigo-600 text-[20px]">info</span>
+                  <span className="material-symbols-outlined text-emerald-500 text-[20px]">info</span>
                 )}
               </div>
               <span className="toast-message">{toast.message}</span>

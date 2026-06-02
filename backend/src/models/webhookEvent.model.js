@@ -2,15 +2,29 @@ import mongoose from "mongoose";
 
 const webhookEventSchema = new mongoose.Schema(
   {
-    eventId: {
+    stripeEventId: {
       type: String,
       required: true,
       unique: true,
     },
+    type: {
+      type: String,
+      default: "",
+    },
+    status: {
+      type: String,
+      enum: ["pending", "processed", "failed"],
+      default: "pending",
+    },
+    payload: {
+      type: mongoose.Schema.Types.Mixed,
+    },
     processedAt: {
       type: Date,
-      default: Date.now,
-      expires: 2592000,
+    },
+    error: {
+      type: String,
+      default: "",
     },
   },
   {

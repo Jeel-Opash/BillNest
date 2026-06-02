@@ -102,6 +102,46 @@ export const transitionInvoice = async (req, res) => {
   }
 };
 
+export const sendInvoice = async (req, res) => {
+  try {
+    const invoice = await InvoiceService.sendInvoice(req.user.organizationId, req.params.id);
+    await AuditService.logAction(req.user.organizationId, req.user.userId || "system", "INVOICE_SENT", { invoiceId: invoice._id }, req.ip, req.headers["user-agent"]);
+    res.json({ success: true, invoice });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const voidInvoice = async (req, res) => {
+  try {
+    const invoice = await InvoiceService.voidInvoice(req.user.organizationId, req.params.id, req.body.reason);
+    await AuditService.logAction(req.user.organizationId, req.user.userId || "system", "INVOICE_VOIDED", { invoiceId: invoice._id, reason: req.body.reason }, req.ip, req.headers["user-agent"]);
+    res.json({ success: true, invoice });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const markInvoicePaid = async (req, res) => {
+  try {
+    const invoice = await InvoiceService.markPaid(req.user.organizationId, req.params.id);
+    await AuditService.logAction(req.user.organizationId, req.user.userId || "system", "INVOICE_MARKED_PAID", { invoiceId: invoice._id }, req.ip, req.headers["user-agent"]);
+    res.json({ success: true, invoice });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const deleteInvoice = async (req, res) => {
+  try {
+    const invoice = await InvoiceService.deleteDraft(req.user.organizationId, req.params.id);
+    await AuditService.logAction(req.user.organizationId, req.user.userId || "system", "INVOICE_DELETED", { invoiceId: invoice._id }, req.ip, req.headers["user-agent"]);
+    res.json({ success: true, invoice });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 export const downloadInvoicePdf = async (req, res) => {
   try {
     const pdfBuffer = await InvoiceService.getInvoicePdfBuffer(

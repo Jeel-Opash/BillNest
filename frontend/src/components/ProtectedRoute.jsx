@@ -2,43 +2,55 @@ import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+const LoadingScreen = () => (
+  <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center gap-4 font-sans">
+    <div className="flex items-center gap-2.5 mb-4">
+      <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
+        BN
+      </div>
+      <span className="font-bold text-lg text-slate-900 tracking-tight">BillNest</span>
+    </div>
+
+    {/* Skeleton sidebar + content */}
+    <div className="flex gap-4 w-full max-w-4xl px-6">
+      <div className="w-48 flex flex-col gap-3 flex-shrink-0">
+        <div className="h-8 bg-slate-200 rounded-xl animate-pulse"></div>
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-9 bg-slate-100 rounded-xl animate-pulse" style={{ animationDelay: `${i * 80}ms` }}></div>
+        ))}
+      </div>
+      <div className="flex-1 flex flex-col gap-4">
+        <div className="grid grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-slate-100 rounded-2xl animate-pulse" style={{ animationDelay: `${i * 60}ms` }}></div>
+          ))}
+        </div>
+        <div className="h-48 bg-slate-100 rounded-2xl animate-pulse"></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-32 bg-slate-100 rounded-2xl animate-pulse"></div>
+          <div className="h-32 bg-slate-100 rounded-2xl animate-pulse" style={{ animationDelay: "100ms" }}></div>
+        </div>
+      </div>
+    </div>
+
+    <p className="text-xs text-slate-400 font-semibold mt-2 animate-pulse">Loading your workspace...</p>
+  </div>
+);
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
-    return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "var(--bg-primary)",
-        color: "var(--text-secondary)",
-        fontFamily: "var(--font-sans)"
-      }}>
-        <div style={{
-          width: "48px",
-          height: "48px",
-          border: "4px solid rgba(255,255,255,0.05)",
-          borderTopColor: "var(--accent-primary)",
-          borderRadius: "50%",
-          animation: "spin-slow 1s linear infinite"
-        }}></div>
-        <p style={{ marginTop: "16px", fontWeight: 500, letterSpacing: "0.05em" }}>LOADING BILLNEST...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {
-
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return children;

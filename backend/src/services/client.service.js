@@ -1,4 +1,7 @@
 import Client from "../models/client.model.js";
+import Invoice from "../models/invoice.model.js";
+import Subscription from "../models/subscription.model.js";
+import mongoose from "mongoose";
 
 class ClientService {
 
@@ -23,6 +26,9 @@ class ClientService {
     if (query.isActive !== undefined) {
       filter.isActive = query.isActive === "true";
     }
+    if (query.createdBy !== undefined) {
+      filter.createdBy = query.createdBy;
+    }
 
     return await Client.find(filter).sort({ name: 1 });
   }
@@ -35,7 +41,8 @@ class ClientService {
     if (!client) {
       throw new Error("Client not found or access denied");
     }
-    return client;
+    const stats = await this.getClientStats(organizationId, id);
+    return { client, stats };
   }
 
 
@@ -66,6 +73,32 @@ class ClientService {
       throw new Error("Client not found or access denied");
     }
     return client;
+  }
+
+  async getClientStats(organizationId, id) {
+    const orgId = new mongoose.Types.ObjectId(organizationId);
+    const clientId = new mongoose.Types.ObjectId(id);
+    const [stats] = await Invoice.aggregate([
+      { $match: { organization: orgId, client: clientId } },
+      {
+        $group: {
+          _id: null,
+          totalBilled: { $sum: "$totalAmount" },
+          totalPaid: { $sum: { $cond: [{ $eq: ["$status", "paid"] }, "$totalAmount", 0] } },
+          outstanding: { $sum: { $cond: [{ $in: ["$status", ["sent", "overdue"]] }, "$totalAmount", 0] } },
+          invoiceCount: { $sum: 1 },
+        },
+      },
+    ]);
+    return stats || { totalBilled: 0, totalPaid: 0, outstanding: 0, invoiceCount: 0 };
+  }
+
+  async getClientInvoices(organizationId, id) {
+    return Invoice.find({ organization: organizationId, client: id }).sort({ createdAt: -1 });
+  }
+
+  async getClientSubscriptions(organizationId, id) {
+    return Subscription.find({ organization: organizationId, client: id }).sort({ createdAt: -1 });
   }
 }
 

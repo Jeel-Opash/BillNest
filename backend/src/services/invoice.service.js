@@ -11,7 +11,8 @@ class InvoiceService {
   calculateFinancials(items, taxRate = 0, discountRate = 0) {
     let subtotal = 0;
     items.forEach((item) => {
-      subtotal += item.quantity * item.price;
+      const unitPrice = item.unitPrice !== undefined ? item.unitPrice : item.price;
+      subtotal += item.quantity * unitPrice;
     });
 
     const discountAmount = parseFloat(((subtotal * discountRate) / 100).toFixed(2));
@@ -161,7 +162,7 @@ class InvoiceService {
 
     const current = invoice.status;
     const allowed = {
-      draft: ["sent", "void"],
+      draft: ["sent"],
       sent: ["paid", "overdue", "void"],
       overdue: ["paid", "void"],
       paid: [],
@@ -180,6 +181,37 @@ class InvoiceService {
       await this.sendInvoiceByEmail(invoice);
     }
 
+    return invoice;
+  }
+
+  async sendInvoice(organizationId, id) {
+    const invoice = await this.transitionStatus(organizationId, id, "sent");
+    invoice.sentAt = invoice.sentAt || new Date();
+    await invoice.save();
+    return invoice;
+  }
+
+  async voidInvoice(organizationId, id, reason = "") {
+    const invoice = await this.transitionStatus(organizationId, id, "void");
+    invoice.voidedAt = new Date();
+    invoice.internalNotes = [invoice.internalNotes, reason && `Void reason: ${reason}`].filter(Boolean).join("\n");
+    await invoice.save();
+    return invoice;
+  }
+
+  async markPaid(organizationId, id) {
+    const invoice = await this.transitionStatus(organizationId, id, "paid");
+    invoice.paidAt = new Date();
+    invoice.paidAmount = invoice.totalAmount || invoice.total || 0;
+    await invoice.save();
+    return invoice;
+  }
+
+  async deleteDraft(organizationId, id) {
+    const invoice = await Invoice.findOne({ _id: id, organization: organizationId });
+    if (!invoice) throw new Error("Invoice not found or access denied");
+    if (invoice.status !== "draft") throw new Error("Only draft invoices can be deleted");
+    await invoice.deleteOne();
     return invoice;
   }
 

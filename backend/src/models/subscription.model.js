@@ -45,6 +45,11 @@ const subscriptionSchema = new mongoose.Schema(
       required: true,
     },
 
+    planId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubscriptionPlan",
+    },
+
     description: {
       type: String,
       default: "",
@@ -87,6 +92,23 @@ const subscriptionSchema = new mongoose.Schema(
       required: true,
     },
 
+    nextInvoiceDate: {
+      type: Date,
+    },
+
+    currentPeriodStart: {
+      type: Date,
+    },
+
+    currentPeriodEnd: {
+      type: Date,
+    },
+
+    cancelAtPeriodEnd: {
+      type: Boolean,
+      default: false,
+    },
+
     trialEndsAt: {
       type: Date,
     },
@@ -106,6 +128,11 @@ const subscriptionSchema = new mongoose.Schema(
     },
 
     autoCharge: {
+      type: Boolean,
+      default: true,
+    },
+
+    autoInvoice: {
       type: Boolean,
       default: true,
     },
@@ -147,10 +174,25 @@ subscriptionSchema.pre("validate", function () {
   } else if (this.client) {
     this.clientId = this.client;
   }
+
+  if (this.nextBillingDate && !this.nextInvoiceDate) {
+    this.nextInvoiceDate = this.nextBillingDate;
+  } else if (this.nextInvoiceDate && !this.nextBillingDate) {
+    this.nextBillingDate = this.nextInvoiceDate;
+  }
+
+  if (this.startDate && !this.currentPeriodStart) {
+    this.currentPeriodStart = this.startDate;
+  }
+
+  if (this.endDate && !this.currentPeriodEnd) {
+    this.currentPeriodEnd = this.endDate;
+  }
 });
 
 subscriptionSchema.index({ tenantId: 1, status: 1 });
 subscriptionSchema.index({ tenantId: 1, clientId: 1 });
+subscriptionSchema.index({ tenantId: 1, status: 1, nextInvoiceDate: 1 });
 subscriptionSchema.index({ nextBillingDate: 1, status: 1 });
 
 const Subscription = mongoose.model("Subscription", subscriptionSchema);

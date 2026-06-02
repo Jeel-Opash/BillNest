@@ -21,11 +21,13 @@ const InvoicesTab = ({
   setBuilderTaxRate,
   handleAddBuilderItem,
   handleCreateInvoice,
+  handleGenerateInvoicePDF,
   showToast
 }) => {
   const itemsSubtotal = builderItems.reduce((acc, it) => acc + (it.qty * it.price), 0);
-  const itemsTaxAmount = Math.round((itemsSubtotal - builderDiscount) * (builderTaxRate / 100));
-  const itemsFinalTotal = Math.max(0, itemsSubtotal - builderDiscount + itemsTaxAmount);
+  const discountAmount = Math.round(itemsSubtotal * (builderDiscount / 100));
+  const itemsTaxAmount = Math.round((itemsSubtotal - discountAmount) * (builderTaxRate / 100));
+  const itemsFinalTotal = Math.max(0, itemsSubtotal - discountAmount + itemsTaxAmount);
 
   return (
     <div className="flex flex-col gap-6">
@@ -90,8 +92,8 @@ const InvoicesTab = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Discount flat (₹)</label>
-                <input type="number" min="0" className="w-full bg-slate-50/50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none transition-all" value={builderDiscount} onChange={(e) => setBuilderDiscount(parseInt(e.target.value) || 0)} />
+                <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Discount (%)</label>
+                <input type="number" min="0" max="100" className="w-full bg-slate-50/50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none transition-all" value={builderDiscount} onChange={(e) => setBuilderDiscount(parseInt(e.target.value) || 0)} />
               </div>
               <div>
                 <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Tax Rate (GST %)</label>
@@ -106,8 +108,8 @@ const InvoicesTab = ({
               </div>
               {builderDiscount > 0 && (
                 <div className="flex justify-between text-red-600">
-                  <span>Discount</span>
-                  <span>- ₹{builderDiscount.toLocaleString()}</span>
+                  <span>Discount ({builderDiscount}%)</span>
+                  <span>- ₹{discountAmount.toLocaleString()}</span>
                 </div>
               )}
               {builderTaxRate > 0 && (
@@ -155,19 +157,30 @@ const InvoicesTab = ({
                     <span className="text-[9px] text-slate-400 font-semibold block">DUE DATE</span>
                     <span className="text-[10px] text-slate-600 font-bold">{inv.dueDate}</span>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right space-y-1">
                     <span className="text-sm font-extrabold text-slate-900 block">₹{inv.amount.toLocaleString()}</span>
-                    {inv.status === "sent" && (
+                    <div className="flex items-center gap-1.5 justify-end">
                       <button
-                        onClick={() => {
-                          setInvoices(invoices.map(i => i.id === inv.id ? { ...i, status: "paid" } : i));
-                          showToast(`Invoice ${inv.id} PAID.`, "success");
-                        }}
-                        className="mt-1 bg-emerald-600 text-white text-[9px] px-2 py-1 rounded-md font-bold hover:bg-emerald-700 transition-colors shadow-sm"
+                        type="button"
+                        onClick={() => handleGenerateInvoicePDF(inv)}
+                        className="bg-indigo-50 border border-indigo-100 text-indigo-600 text-[9px] px-2.5 py-1 rounded-md font-bold hover:bg-indigo-100 transition-colors shadow-sm flex items-center gap-0.5"
                       >
-                        Mark Paid
+                        <span className="material-symbols-outlined text-[11px]">picture_as_pdf</span>
+                        PDF
                       </button>
-                    )}
+                      {inv.status === "sent" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInvoices(invoices.map(i => i.id === inv.id ? { ...i, status: "paid" } : i));
+                            showToast(`Invoice ${inv.id} PAID.`, "success");
+                          }}
+                          className="bg-emerald-600 text-white text-[9px] px-2 py-1 rounded-md font-bold hover:bg-emerald-700 transition-colors shadow-sm"
+                        >
+                          Mark Paid
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

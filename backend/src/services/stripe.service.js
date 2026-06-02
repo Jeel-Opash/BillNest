@@ -104,14 +104,18 @@ class StripeService {
     const eventId = event.id || `evt_mock_${Date.now()}`;
 
 
-    const existingLog = await WebhookEvent.findOne({ eventId });
-    if (existingLog) {
+    const existingLog = await WebhookEvent.findOne({ stripeEventId: eventId });
+    if (existingLog && existingLog.status === "processed") {
       console.log(`Duplicate Stripe Webhook event: ${eventId} has already been processed.`);
       return { status: "ignored_duplicate" };
     }
 
 
-    await WebhookEvent.create({ eventId });
+    const webhookRecord = await WebhookEvent.findOneAndUpdate(
+      { stripeEventId: eventId },
+      { $setOnInsert: { stripeEventId: eventId, type: event.type, payload: event, status: "pending" } },
+      { upsert: true, new: true }
+    );
 
 
     switch (event.type) {
@@ -134,6 +138,7 @@ class StripeService {
           });
           console.log(`Subscription upgraded via Stripe for Org ID: ${organizationId} to ${plan}`);
         }
+        await WebhookEvent.findOneAndUpdate({ stripeEventId: eventId }, { status: "processed", processedAt: new Date() });
         break;
       }
 
@@ -151,6 +156,7 @@ class StripeService {
           );
           console.log(`Stripe webhook: payment failed for invoice: ${invoiceId}. Set status to overdue.`);
         }
+        await WebhookEvent.findOneAndUpdate({ stripeEventId: eventId }, { status: "processed", processedAt: new Date() });
         break;
       }
 
@@ -166,6 +172,7 @@ class StripeService {
             },
           });
         }
+        await WebhookEvent.findOneAndUpdate({ stripeEventId: eventId }, { status: "processed", processedAt: new Date() });
         break;
       }
 
@@ -181,11 +188,13 @@ class StripeService {
             },
           });
         }
+        await WebhookEvent.findOneAndUpdate({ stripeEventId: eventId }, { status: "processed", processedAt: new Date() });
         break;
       }
 
       default:
         console.log(`Unhandled Stripe event type: ${event.type}`);
+        await WebhookEvent.findOneAndUpdate({ stripeEventId: eventId }, { status: "processed", processedAt: new Date() });
     }
 
     return { status: "processed", eventId };

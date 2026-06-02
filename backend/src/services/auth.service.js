@@ -15,7 +15,9 @@ class AuthService {
       {
         userId: user._id,
         organizationId: user.organization._id || user.organization,
+        tenantId: user.organization._id || user.organization,
         role: user.role,
+        email: user.email,
       },
       process.env.JWT_SECRET,
       { expiresIn: "15m" }
@@ -28,7 +30,7 @@ class AuthService {
   signRefreshToken(user) {
     return jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET,
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
   }
@@ -68,7 +70,7 @@ class AuthService {
       name,
       email,
       password: hashedPassword,
-      role: role || "member",
+      role: "owner",
       status: "active",
     });
 
@@ -144,7 +146,7 @@ class AuthService {
 
     let decoded;
     try {
-      decoded = jwt.verify(receivedRefreshToken, process.env.JWT_SECRET);
+      decoded = jwt.verify(receivedRefreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
     } catch (err) {
       throw new Error("Invalid refresh token");
     }
@@ -284,6 +286,33 @@ class AuthService {
 
 
 
+
+  async updateUserRole(userId, role) {
+    const user = await User.findById(userId).populate("organization");
+    if (!user) {
+      throw new Error("User not found");
+    }
+    user.role = role;
+    await user.save();
+    
+    const accessToken = this.signAccessToken(user);
+    const refreshToken = this.signRefreshToken(user);
+    
+    user.refreshTokens.push(refreshToken);
+    await user.save();
+    
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        organization: user.organization
+      },
+      accessToken,
+      refreshToken
+    };
+  }
 
   async getTeamMembers(organizationId) {
     return await User.find({ organization: organizationId })

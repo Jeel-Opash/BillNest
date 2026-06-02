@@ -11,6 +11,10 @@ import invoiceRoutes from "./routes/invoice.routes.js";
 import stripeRoutes from "./routes/stripe.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import planRoutes from "./routes/plan.routes.js";
+import reportRoutes from "./routes/report.routes.js";
+import settingsRoutes from "./routes/settings.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 
 import tenantRateLimiter from "./middleware/rateLimit.middleware.js";
 
@@ -18,7 +22,7 @@ const app = express();
 
 const baseLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  limit: 150,
+  limit: process.env.NODE_ENV === "production" ? 150 : 150000, 
   standardHeaders: "draft-8",
   legacyHeaders: false,
 });
@@ -26,7 +30,7 @@ const baseLimiter = rateLimit({
 app.use(helmet());
 app.use(
   cors({
-    origin: true,
+    origin: process.env.FRONTEND_URL || true,
     credentials: true,
   })
 );
@@ -39,14 +43,16 @@ app.use("/api/stripe", stripeRoutes);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", tenantRateLimiter);
-
 app.use("/api/auth", authRoutes);
-app.use("/api", authRoutes);
+app.use("/api", tenantRateLimiter);
 app.use("/api/clients", clientRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/plans", planRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

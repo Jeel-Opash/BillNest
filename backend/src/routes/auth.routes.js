@@ -13,6 +13,7 @@ import {
   deleteApiKey,
   getAuditLogs,
   getTeamMembers,
+  updateRole,
 } from "../controllers/auth.controller.js";
 
 const router = express.Router();
@@ -24,6 +25,7 @@ router.post("/login", login);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 router.post("/accept-invite", acceptInvitation);
+router.put("/update-role", authMiddleware, updateRole);
 
 
 router.post("/invite", authMiddleware, roleMiddleware("owner", "admin"), inviteTeammate);

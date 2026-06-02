@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -135,37 +135,160 @@ const ReadOnlyDashboard = () => {
     showToast("Tax Statement document generated!", "success");
   };
 
+  const [clients, setClients] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_clients`);
+      return saved ? JSON.parse(saved) : [
+        { id: "c1", name: "ABC Restaurant", company: "ABC Food & Beverages", email: "owner@abcrestaurant.com", phone: "+91 98765 43210", taxId: "24ABCDE1234F1Z5", address: "Surat, Gujarat", currency: "INR", notes: "Prefers UPI payments" },
+        { id: "c2", name: "Pixel Studio", company: "Pixel Creative Labs", email: "finance@pixelstudio.com", phone: "+91 99988 77766", taxId: "27PIXEL7788A1Z9", address: "Mumbai, Maharashtra", currency: "INR", notes: "Monthly billing cycle" }
+      ];
+    } catch {
+      return [];
+    }
+  });
 
-  const [monthlyRevenue] = useState(250000);
-  const [outstandingPayments] = useState(40000);
-  const [activeSubscriptions] = useState(4);
+  const [invoices, setInvoices] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_invoices`);
+      return saved ? JSON.parse(saved) : [
+        { id: "INV-1024", client: "ABC Food & Beverages", amount: 34220, date: "2026-05-28", dueDate: "2026-06-10", status: "sent", items: [{ desc: "Website Design", qty: 1, price: 25000 }, { desc: "Hosting Support", qty: 12, price: 500 }] },
+        { id: "INV-1023", client: "Pixel Creative Labs", amount: 15000, date: "2026-05-20", dueDate: "2025-05-30", status: "paid", items: [{ desc: "Logo Design Pro Package", qty: 1, price: 15000 }] }
+      ];
+    } catch {
+      return [];
+    }
+  });
 
+  const [payments, setPayments] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_payments`);
+      return saved ? JSON.parse(saved) : [
+        { id: "TXN-90241", invoice: "INV-1023", client: "Pixel Studio", method: "Stripe Card", amount: 15000, status: "succeeded", date: "2026-05-20" },
+        { id: "TXN-90240", invoice: "INV-1022", client: "Nova Software Inc", method: "Stripe Card", amount: 5000, status: "failed", date: "2026-05-15" }
+      ];
+    } catch {
+      return [];
+    }
+  });
 
-  const [clients] = useState([
-    { id: "c1", name: "ABC Restaurant", company: "ABC Food & Beverages", email: "owner@abcrestaurant.com", phone: "+91 98765 43210", taxId: "24ABCDE1234F1Z5", address: "Surat, Gujarat", currency: "INR", notes: "Prefers UPI payments" },
-    { id: "c2", name: "Pixel Studio", company: "Pixel Creative Labs", email: "finance@pixelstudio.com", phone: "+91 99988 77766", taxId: "27PIXEL7788A1Z9", address: "Mumbai, Maharashtra", currency: "INR", notes: "Monthly billing cycle" },
-    { id: "c3", name: "Nova Software Inc", company: "Nova Tech Ltd", email: "billing@novatech.com", phone: "+1 (555) 234-5678", taxId: "US9988223", address: "Austin, Texas", currency: "USD", notes: "Stripe recurring billing active" }
-  ]);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_notifications`);
+      return saved ? JSON.parse(saved) : [
+        { id: "n1", text: "Stripe webhook processed INV-1023 success.", time: "1 hour ago", read: false },
+        { id: "n2", text: "Invoice INV-1022 marked overdue.", time: "1 day ago", read: false }
+      ];
+    } catch {
+      return [];
+    }
+  });
 
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_clients`, JSON.stringify(clients));
+    }
+  }, [clients, user]);
 
-  const [invoices] = useState([
-    { id: "INV-1030", client: "ABC Restaurant", amount: 15000, date: "2026-05-29", dueDate: "2026-06-12", status: "paid" },
-    { id: "INV-1029", client: "Pixel Studio", amount: 25000, date: "2026-05-28", dueDate: "2026-06-10", status: "sent" },
-    { id: "INV-1028", client: "Nova Software Inc", amount: 12000, date: "2026-05-20", dueDate: "2026-05-30", status: "overdue" }
-  ]);
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_invoices`, JSON.stringify(invoices));
+    }
+  }, [invoices, user]);
 
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_payments`, JSON.stringify(payments));
+    }
+  }, [payments, user]);
 
-  const [payments] = useState([
-    { id: "TXN-90124", invoice: "INV-1030", client: "ABC Restaurant", method: "UPI", amount: 15000, status: "succeeded", date: "2026-05-29" },
-    { id: "TXN-90123", invoice: "INV-1029", client: "Pixel Studio", method: "Stripe Card", amount: 25000, status: "pending", date: "2026-05-28" }
-  ]);
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_notifications`, JSON.stringify(notifications));
+    }
+  }, [notifications, user]);
 
+  const [selectedStripeInvoice, setSelectedStripeInvoice] = useState(null);
+  const [isProcessingStripe, setIsProcessingStripe] = useState(false);
+  const [stripeSuccessAlert, setStripeSuccessAlert] = useState(false);
+  const [stripeFailAlert, setStripeFailAlert] = useState(false);
 
-  const [notifications, setNotifications] = useState([
-    { id: "n1", text: "Stripe webhook processed INV-1030 success.", time: "1 hour ago", read: false },
-    { id: "n2", text: "Invoice INV-1028 marked overdue.", time: "1 day ago", read: false },
-    { id: "n3", text: "Monthly financial report generated by Owner.", time: "2 days ago", read: true }
-  ]);
+  const handleInitiateStripePayment = (inv) => {
+    setSelectedStripeInvoice(inv);
+    setStripeSuccessAlert(false);
+    setStripeFailAlert(false);
+  };
+
+  const handleProcessStripePayment = (success) => {
+    setIsProcessingStripe(true);
+    setTimeout(() => {
+      setIsProcessingStripe(false);
+      if (success) {
+        showToast("Stripe Webhook RECEIVED: event: payment_succeeded", "success");
+        
+        const updatedInvoices = invoices.map(i => 
+          i.id === selectedStripeInvoice.id ? { ...i, status: "paid" } : i
+        );
+        setInvoices(updatedInvoices);
+
+        const newTxn = {
+          id: `TXN-${Math.floor(10000 + Math.random() * 90000)}`,
+          invoice: selectedStripeInvoice.id,
+          client: selectedStripeInvoice.client,
+          method: "Stripe Card",
+          amount: selectedStripeInvoice.amount,
+          status: "succeeded",
+          date: new Date().toISOString().split("T")[0]
+        };
+        setPayments([newTxn, ...payments]);
+
+        setNotifications([
+          { id: `n_${Date.now()}`, text: `Stripe webhook processed payment for ${selectedStripeInvoice.id} successfully.`, time: "Just now", read: false },
+          ...notifications
+        ]);
+
+        setStripeSuccessAlert(true);
+        setTimeout(() => {
+          setSelectedStripeInvoice(null);
+        }, 2000);
+      } else {
+        showToast("Stripe Webhook RECEIVED: event: payment_failed", "error");
+
+        const updatedInvoices = invoices.map(i => 
+          i.id === selectedStripeInvoice.id ? { ...i, status: "FAILED" } : i
+        );
+        setInvoices(updatedInvoices);
+
+        const newTxn = {
+          id: `TXN-${Math.floor(10000 + Math.random() * 90000)}`,
+          invoice: selectedStripeInvoice.id,
+          client: selectedStripeInvoice.client,
+          method: "Stripe Card",
+          amount: selectedStripeInvoice.amount,
+          status: "failed",
+          date: new Date().toISOString().split("T")[0]
+        };
+        setPayments([newTxn, ...payments]);
+
+        setNotifications([
+          { id: `n_${Date.now()}`, text: `Stripe webhook reported payment FAILED for ${selectedStripeInvoice.id}.`, time: "Just now", read: false },
+          ...notifications
+        ]);
+
+        setTimeout(() => {
+          showToast(`Automated payment retry alert email dispatched to ${selectedStripeInvoice.client}!`, "info");
+        }, 1500);
+
+        setStripeFailAlert(true);
+        setTimeout(() => {
+          setSelectedStripeInvoice(null);
+        }, 2500);
+      }
+    }, 2000);
+  };
+
+  const monthlyRevenue = invoices.filter(i => i.status === "paid").reduce((sum, i) => sum + i.amount, 0);
+  const outstandingPayments = invoices.filter(i => i.status !== "paid").reduce((sum, i) => sum + i.amount, 0);
+  const activeSubscriptions = 1;
 
 
   const [profileName, setProfileName] = useState("Auditor Account");
@@ -288,7 +411,6 @@ const ReadOnlyDashboard = () => {
                           onClick={() => {
                             setIsProfileDropdownOpen(false);
                             logout();
-                            showToast("Signed out successfully", "info");
                           }}
                           className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                         >
@@ -424,12 +546,25 @@ const ReadOnlyDashboard = () => {
                       </div>
                       <div className="text-right flex flex-col items-end gap-2">
                         <h5 className="font-bold text-on-surface">₹{inv.amount.toLocaleString()}</h5>
-                        <button
-                          onClick={() => showToast(`Initiating download for ${inv.id}...`, "success")}
-                          className="bg-primary text-white text-[10px] px-2 py-1 rounded font-bold hover:opacity-90"
-                        >
-                          Download PDF
-                        </button>
+                        <div className="flex gap-2">
+                          {(inv.status === "sent" || inv.status === "FAILED") && (
+                            <button
+                              type="button"
+                              onClick={() => handleInitiateStripePayment(inv)}
+                              className="bg-indigo-600 text-white text-[10px] px-2.5 py-1 rounded font-bold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-0.5"
+                            >
+                              <span className="material-symbols-outlined text-[12px]">credit_card</span>
+                              Pay Now
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => showToast(`Initiating download for ${inv.id}...`, "success")}
+                            className="bg-primary text-white text-[10px] px-2.5 py-1 rounded font-bold hover:opacity-90"
+                          >
+                            Download PDF
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -572,6 +707,125 @@ const ReadOnlyDashboard = () => {
 
         </div>
       </main>
+
+      {selectedStripeInvoice && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.15)] border border-slate-100 max-w-4xl w-full overflow-hidden grid grid-cols-1 md:grid-cols-12 animate-fade-in text-slate-800">
+            {/* Left Column: Summary */}
+            <div className="md:col-span-5 bg-slate-50 p-8 border-r border-slate-100 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-6">
+                  <span className="material-symbols-outlined text-indigo-600 text-3xl">payment</span>
+                  <span className="font-extrabold text-xl tracking-tight text-slate-900">stripe</span>
+                </div>
+                <h4 className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Paying To</h4>
+                <h3 className="font-extrabold text-slate-900 text-lg mb-6">{user?.organization?.name || "CodeCraft Agency"}</h3>
+                
+                <h4 className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Invoice Reference</h4>
+                <p className="font-bold text-slate-900 text-sm mb-4">{selectedStripeInvoice.id}</p>
+
+                <h4 className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Client Entity</h4>
+                <p className="font-bold text-slate-700 text-xs mb-8">{selectedStripeInvoice.client}</p>
+              </div>
+
+              <div>
+                <span className="text-slate-400 text-xs font-semibold">Amount Due</span>
+                <div className="text-3xl font-black text-slate-955 mt-1">₹{selectedStripeInvoice.amount.toLocaleString()}</div>
+              </div>
+            </div>
+
+            {/* Right Column: Checkout Portal & Webhook Simulators */}
+            <div className="md:col-span-7 p-8 flex flex-col justify-between relative">
+              <button 
+                type="button"
+                onClick={() => setSelectedStripeInvoice(null)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all font-bold"
+              >
+                ✕
+              </button>
+
+              <div>
+                <h3 className="font-bold text-slate-900 text-lg mb-1">Secure Credit Card Checkout</h3>
+                <p className="text-slate-400 text-xs font-medium mb-6">Enter card details to complete sandbox simulation.</p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">Cardholder Name</label>
+                    <input type="text" className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl p-3 text-xs font-semibold outline-none transition-all" placeholder="Rahul Patel" defaultValue="Rahul Patel" />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">Card Number</label>
+                    <div className="relative">
+                      <input type="text" className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl p-3 text-xs font-semibold outline-none transition-all pl-10" placeholder="4242 4242 4242 4242" defaultValue="4242 4242 4242 4242" />
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">credit_card</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">Expiration (MM/YY)</label>
+                      <input type="text" className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl p-3 text-xs font-semibold outline-none transition-all" placeholder="12/29" defaultValue="12/29" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">CVC</label>
+                      <input type="text" className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl p-3 text-xs font-semibold outline-none transition-all" placeholder="123" defaultValue="123" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status and Action Panel */}
+              <div className="mt-8 pt-6 border-t border-slate-100">
+                {isProcessingStripe ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <div className="w-8 h-8 rounded-full border-4 border-indigo-600/30 border-t-indigo-600 animate-spin"></div>
+                    <span className="text-xs font-bold text-slate-600">Simulating Stripe Payment Gateway callback...</span>
+                  </div>
+                ) : stripeSuccessAlert ? (
+                  <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center gap-3 text-emerald-800">
+                    <span className="material-symbols-outlined text-emerald-500">check_circle</span>
+                    <div className="text-xs">
+                      <p className="font-bold">Stripe Webhook SUCCESS Received!</p>
+                      <p className="text-[10px] opacity-90 mt-0.5">Event payload successfully handled. Invoice state set to PAID.</p>
+                    </div>
+                  </div>
+                ) : stripeFailAlert ? (
+                  <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex items-center gap-3 text-rose-800">
+                    <span className="material-symbols-outlined text-rose-500">cancel</span>
+                    <div className="text-xs">
+                      <p className="font-bold">Stripe Webhook FAILURE Received!</p>
+                      <p className="text-[10px] opacity-90 mt-0.5">Event: payment_failed. Invoice status: FAILED. Automated retry email dispatched.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleProcessStripePayment(true)}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-colors shadow-md flex items-center justify-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                        Simulate Webhook SUCCESS
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleProcessStripePayment(false)}
+                        className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-colors shadow-md flex items-center justify-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">cancel</span>
+                        Simulate Webhook FAILURE
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 text-center font-semibold mt-1">
+                      🔒 Sandbox Testing: Click either trigger to preview webhook resolution logic.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

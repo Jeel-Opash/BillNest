@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import OverviewTab from "./owner/OverviewTab";
 import ClientsTab from "./owner/ClientsTab";
 import InvoicesTab from "./owner/InvoicesTab";
 import TeamTab from "./owner/TeamTab";
+import CreateWorkspaceTab from "./owner/CreateWorkspaceTab";
 
 const OwnerDashboard = () => {
   const { user, logout, showToast, addLocalInvitation } = useAuth();
@@ -39,7 +40,7 @@ const OwnerDashboard = () => {
       inv.dueDate,
       inv.status
     ]);
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -60,7 +61,7 @@ const OwnerDashboard = () => {
     const totalRevenue = invoices.reduce((sum, inv) => sum + inv.amount, 0);
     const paidRevenue = invoices.filter(i => i.status === "paid").reduce((sum, inv) => sum + inv.amount, 0);
     const taxPaid = paidRevenue * 0.18; // 18% tax simulation
-    
+
     printWindow.document.write(`
       <html>
         <head>
@@ -144,12 +145,17 @@ const OwnerDashboard = () => {
   const [outstandingValue] = useState(20000);
   const [paidValue] = useState(850000);
 
-
-  const [clients, setClients] = useState([
-    { id: "c1", name: "ABC Restaurant", company: "ABC Food & Beverages", email: "owner@abcrestaurant.com", phone: "+91 98765 43210", taxId: "24ABCDE1234F1Z5", address: "Surat, Gujarat", currency: "INR", notes: "Prefers UPI payments" },
-    { id: "c2", name: "Pixel Studio", company: "Pixel Creative Labs", email: "finance@pixelstudio.com", phone: "+91 99988 77766", taxId: "27PIXEL7788A1Z9", address: "Mumbai, Maharashtra", currency: "INR", notes: "Monthly billing cycle" },
-    { id: "c3", name: "Nova Software Inc", company: "Nova Tech Ltd", email: "billing@novatech.com", phone: "+1 (555) 234-5678", taxId: "US9988223", address: "Austin, Texas", currency: "USD", notes: "Stripe recurring billing active" }
-  ]);
+  const [clients, setClients] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_clients`);
+      return saved ? JSON.parse(saved) : [
+        { id: "c1", name: "ABC Restaurant", company: "ABC Food & Beverages", email: "owner@abcrestaurant.com", phone: "+91 98765 43210", taxId: "24ABCDE1234F1Z5", address: "Surat, Gujarat", currency: "INR", notes: "Prefers UPI payments" },
+        { id: "c2", name: "Pixel Studio", company: "Pixel Creative Labs", email: "finance@pixelstudio.com", phone: "+91 99988 77766", taxId: "27PIXEL7788A1Z9", address: "Mumbai, Maharashtra", currency: "INR", notes: "Monthly billing cycle" }
+      ];
+    } catch {
+      return [];
+    }
+  });
   const [clientSearch, setClientSearch] = useState("");
   const [newClientName, setNewClientName] = useState("");
   const [newClientCompany, setNewClientCompany] = useState("");
@@ -161,33 +167,62 @@ const OwnerDashboard = () => {
   const [newClientNotes, setNewClientNotes] = useState("");
 
 
-  const [invoices, setInvoices] = useState([
-    { id: "INV-1024", client: "ABC Restaurant", amount: 34220, date: "2026-05-28", dueDate: "2026-06-10", status: "sent", items: [{ desc: "Website Design", qty: 1, price: 25000 }, { desc: "Hosting Support", qty: 12, price: 500 }] },
-    { id: "INV-1023", client: "Pixel Studio", amount: 15000, date: "2026-05-20", dueDate: "2026-05-30", status: "paid", items: [{ desc: "Logo Design Pro Package", qty: 1, price: 15000 }] },
-    { id: "INV-1022", client: "Nova Software Inc", amount: 5000, date: "2026-05-15", dueDate: "2026-05-25", status: "overdue", items: [{ desc: "Website Maintenance monthly fee", qty: 1, price: 5000 }] }
-  ]);
-  const [builderClient, setBuilderClient] = useState("ABC Restaurant");
+  const [invoices, setInvoices] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_invoices`);
+      return saved ? JSON.parse(saved) : [
+        { id: "INV-1024", client: "ABC Food & Beverages", amount: 34220, date: "2026-05-28", dueDate: "2026-06-10", status: "sent", items: [{ desc: "Website Design", qty: 1, price: 25000 }, { desc: "Hosting Support", qty: 12, price: 500 }] },
+        { id: "INV-1023", client: "Pixel Creative Labs", amount: 15000, date: "2026-05-20", dueDate: "2025-05-30", status: "paid", items: [{ desc: "Logo Design Pro Package", qty: 1, price: 15000 }] }
+      ];
+    } catch {
+      return [];
+    }
+  });
+  const [builderClient, setBuilderClient] = useState("");
   const [builderDueDate, setBuilderDueDate] = useState("2026-06-15");
-  const [builderDiscount, setBuilderDiscount] = useState(2000);
+  const [builderDiscount, setBuilderDiscount] = useState(10);
   const [builderTaxRate, setBuilderTaxRate] = useState(18);
   const [builderItems, setBuilderItems] = useState([
-    { desc: "Website Design", qty: 1, price: 25000 },
-    { desc: "Hosting", qty: 12, price: 500 }
+    { desc: "UI Design", qty: 1, price: 15000 },
+    { desc: "Frontend Dev", qty: 1, price: 35000 }
   ]);
   const [newDesc, setNewDesc] = useState("");
   const [newQty, setNewQty] = useState(1);
   const [newPrice, setNewPrice] = useState(0);
 
 
-  const [subscriptions, setSubscriptions] = useState([
-    { id: "s1", name: "Website Maintenance Plan", price: 5000, cycle: "monthly", trialDays: 0, client: "ABC Restaurant", status: "active" },
-    { id: "s2", name: "Cloud Support Plan", price: 12000, cycle: "monthly", trialDays: 14, client: "Nova Software Inc", status: "active" }
-  ]);
+  const [subscriptions, setSubscriptions] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_subscriptions`);
+      return saved ? JSON.parse(saved) : [
+        { id: "s1", name: "Website Maintenance Plan", price: 5000, cycle: "monthly", trialDays: 0, client: "ABC Food & Beverages", status: "active" }
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  const [activePostSubId, setActivePostSubId] = useState(null);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [selectedPublishSubId, setSelectedPublishSubId] = useState("");
+  const [newPostTitle, setNewPostTitle] = useState("");
+  const [newPostContent, setNewPostContent] = useState("");
+  const [newPostImage, setNewPostImage] = useState("");
+  const [newPostAttachment, setNewPostAttachment] = useState(null);
+  const [subscriptionPosts, setSubscriptionPosts] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_subscription_posts`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [newPlanName, setNewPlanName] = useState("");
   const [newPlanPrice, setNewPlanPrice] = useState(5000);
   const [newPlanCycle, setNewPlanCycle] = useState("monthly");
   const [newPlanTrial, setNewPlanTrial] = useState(0);
-  const [newPlanClient, setNewPlanClient] = useState("ABC Restaurant");
+  const [newPlanClient, setNewPlanClient] = useState("");
+  const [newPlanImage, setNewPlanImage] = useState("");
 
 
   const [payments] = useState([
@@ -198,11 +233,16 @@ const OwnerDashboard = () => {
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("admin");
-  const [teamList, setTeamList] = useState([
-    { id: "t1", name: "Priya Sharma", email: "priya@codecraft.com", role: "admin", status: "active" },
-    { id: "t2", name: "Amit Kumar", email: "amit@codecraft.com", role: "member", status: "active" },
-    { id: "t3", name: "Neha Patel", email: "neha@codecraft.com", role: "read_only", status: "pending" }
-  ]);
+  const [teamList, setTeamList] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_team_list`);
+      return saved ? JSON.parse(saved) : [
+        { id: "t1", name: user?.name || "Workspace Owner", email: user?.email || "", role: "owner", status: "active" }
+      ];
+    } catch {
+      return [];
+    }
+  });
 
 
   const [auditLogs, setAuditLogs] = useState([
@@ -243,10 +283,48 @@ const OwnerDashboard = () => {
     { id: "n3", text: "Neha Patel accepted your Team invite credentials.", time: "2 days ago", read: true }
   ]);
 
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_clients`, JSON.stringify(clients));
+    }
+  }, [clients, user]);
+
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_invoices`, JSON.stringify(invoices));
+    }
+  }, [invoices, user]);
+
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_subscriptions`, JSON.stringify(subscriptions));
+    }
+  }, [subscriptions, user]);
+
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_subscription_posts`, JSON.stringify(subscriptionPosts));
+    }
+  }, [subscriptionPosts, user]);
+
+  useEffect(() => {
+    if (user?.email) {
+      localStorage.setItem(`workspace_${user.email}_team_list`, JSON.stringify(teamList));
+    }
+  }, [teamList, user]);
+
+  useEffect(() => {
+    if (clients.length > 0) {
+      if (!newPlanClient) setNewPlanClient(clients[0].company || clients[0].name);
+      if (!builderClient) setBuilderClient(clients[0].company || clients[0].name);
+    }
+  }, [clients, newPlanClient, builderClient]);
+
 
   const itemsSubtotal = builderItems.reduce((acc, it) => acc + (it.qty * it.price), 0);
-  const itemsTaxAmount = Math.round((itemsSubtotal - builderDiscount) * (builderTaxRate / 100));
-  const itemsFinalTotal = Math.max(0, itemsSubtotal - builderDiscount + itemsTaxAmount);
+  const discountAmount = Math.round(itemsSubtotal * (builderDiscount / 100));
+  const itemsTaxAmount = Math.round((itemsSubtotal - discountAmount) * (builderTaxRate / 100));
+  const itemsFinalTotal = Math.max(0, itemsSubtotal - discountAmount + itemsTaxAmount);
 
 
   const handleAddBuilderItem = (e) => {
@@ -276,7 +354,129 @@ const OwnerDashboard = () => {
     setInvoices([newInv, ...invoices]);
     setBuilderItems([]);
     showToast(`Invoice Draft ${newInv.id} created!`, "success");
-    setActivePage("invoices");
+    handlePageChange("invoices");
+    setTimeout(() => {
+      handleGenerateInvoicePDF(newInv);
+    }, 100);
+  };
+
+  const handleGenerateInvoicePDF = (inv) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocker is enabled. Please allow pop-ups to export.", "error");
+      return;
+    }
+    const invSubtotal = inv.items.reduce((acc, it) => acc + (it.qty * it.price), 0);
+    const invDiscount = Math.round(invSubtotal * (builderDiscount / 100));
+    const invTax = Math.round((invSubtotal - invDiscount) * (builderTaxRate / 100));
+    const invTotal = inv.amount;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Invoice ${inv.id} - ${inv.client}</title>
+          <style>
+            body { font-family: 'Outfit', 'Inter', sans-serif; color: #334155; padding: 40px; margin: 0; }
+            .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+            .header-row { display: flex; justify-content: space-between; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; align-items: center; }
+            .company-details { text-align: left; }
+            .company-name { font-size: 24px; font-weight: bold; color: #1e1b4b; }
+            .invoice-title { font-size: 32px; font-weight: 800; color: #4f46e5; text-align: right; text-transform: uppercase; letter-spacing: 1px; }
+            .metadata-row { display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 13px; }
+            .bill-to { font-weight: bold; color: #1e293b; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; tracking-wider; color: #64748b; }
+            .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .table th { background: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #64748b; text-align: left; }
+            .table td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+            .text-right { text-align: right !important; }
+            .totals-section { display: flex; justify-content: flex-end; }
+            .totals-table { width: 300px; border-collapse: collapse; font-size: 13px; }
+            .totals-table td { padding: 8px 12px; }
+            .grand-total { font-size: 18px; font-weight: 800; color: #4f46e5; border-top: 2px solid #e2e8f0; padding-top: 12px !important; }
+            .footer { margin-top: 60px; font-size: 11px; text-align: center; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-box">
+            <div class="header-row">
+              <div class="company-details">
+                <div class="company-name">${user?.organization?.name || "CodeCraft Agency"}</div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Premium Tenant Workspace</div>
+              </div>
+              <div class="invoice-title">INVOICE</div>
+            </div>
+
+            <div class="metadata-row">
+              <div>
+                <div class="bill-to">Bill To:</div>
+                <div style="font-weight: bold; font-size: 15px; color: #0f172a;">${inv.client}</div>
+                <div style="color: #64748b; margin-top: 2px;">Isolated SaaS Client Entity</div>
+              </div>
+              <div style="text-align: right; line-height: 1.6;">
+                <div><strong>Invoice Number:</strong> ${inv.id}</div>
+                <div><strong>Date of Issue:</strong> ${inv.date}</div>
+                <div><strong>Due Date:</strong> ${inv.dueDate}</div>
+                <div><strong>Payment Status:</strong> <span style="text-transform: uppercase; font-size: 11px; font-weight: bold; color: #3b82f6;">${inv.status}</span></div>
+              </div>
+            </div>
+
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th class="text-right" style="width: 80px;">Qty</th>
+                  <th class="text-right" style="width: 120px;">Rate</th>
+                  <th class="text-right" style="width: 120px;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${inv.items.map(item => `
+                  <tr>
+                    <td><strong>${item.desc}</strong></td>
+                    <td class="text-right">${item.qty}</td>
+                    <td class="text-right">₹${item.price.toLocaleString()}</td>
+                    <td class="text-right" style="font-weight: bold;">₹${(item.qty * item.price).toLocaleString()}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+
+            <div class="totals-section">
+              <table class="totals-table">
+                <tr>
+                  <td style="color: #64748b;">Subtotal</td>
+                  <td class="text-right">₹${invSubtotal.toLocaleString()}</td>
+                </tr>
+                ${invDiscount > 0 ? `
+                  <tr style="color: #dc2626;">
+                    <td>Discount (${builderDiscount}%)</td>
+                    <td class="text-right">- ₹${invDiscount.toLocaleString()}</td>
+                  </tr>
+                ` : ""}
+                ${invTax > 0 ? `
+                  <tr>
+                    <td style="color: #64748b;">GST (${builderTaxRate}%)</td>
+                    <td class="text-right">+ ₹${invTax.toLocaleString()}</td>
+                  </tr>
+                ` : ""}
+                <tr class="grand-total">
+                  <td><strong>Balance Due</strong></td>
+                  <td class="text-right" style="font-weight: 800; font-size: 20px; color: #4f46e5;">₹${invTotal.toLocaleString()}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div class="footer">
+              Thank you for your business! Generated and digitally signed via BillNest Isolated Billing Engine.
+            </div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    showToast(`PDF invoice generated for ${inv.id}!`, "success");
   };
 
   const handleAddClient = (e) => {
@@ -314,13 +514,41 @@ const OwnerDashboard = () => {
       cycle: newPlanCycle,
       trialDays: newPlanTrial,
       client: newPlanClient,
+      imageUrl: newPlanImage,
       status: "active"
     };
-    setSubscriptions([...subscriptions, newSub]);
+    const updated = [...subscriptions, newSub];
+    setSubscriptions(updated);
     setNewPlanName("");
     setNewPlanPrice(5000);
     setNewPlanTrial(0);
+    setNewPlanImage("");
     showToast(`Subscription '${newPlanName}' deployed!`, "success");
+  };
+
+  const handlePublishPost = (subId) => {
+    if (!newPostTitle || !newPostContent) {
+      showToast("Please enter a title and description.", "error");
+      return;
+    }
+    const newPost = {
+      id: `post_${Date.now()}`,
+      subscriptionId: subId,
+      title: newPostTitle,
+      content: newPostContent,
+      imageUrl: newPostImage || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=60",
+      attachment: newPostAttachment,
+      date: new Date().toISOString().split("T")[0]
+    };
+    const updated = [...subscriptionPosts, newPost];
+    setSubscriptionPosts(updated);
+    localStorage.setItem("billnest_subscription_posts", JSON.stringify(updated));
+    showToast("Subscription announcement published!", "success");
+    setActivePostSubId(null);
+    setNewPostTitle("");
+    setNewPostContent("");
+    setNewPostImage("");
+    setNewPostAttachment(null);
   };
 
   const handleSendInvite = (e) => {
@@ -374,8 +602,7 @@ const OwnerDashboard = () => {
             {
               title: "ANALYTICS",
               items: [
-                { id: "dashboard", label: "Dashboard", symbol: "dashboard" },
-                { id: "reports", label: "Reports", symbol: "analytics" }
+                { id: "dashboard", label: "Dashboard", symbol: "dashboard" }
               ]
             },
             {
@@ -383,10 +610,9 @@ const OwnerDashboard = () => {
               items: [
                 { id: "clients", label: "Clients", symbol: "group" },
                 { id: "invoices", label: "Invoices", symbol: "receipt_long" },
-                { id: "subscriptions", label: "Subscriptions", symbol: "autorenew" },
-                { id: "payments", label: "Payments", symbol: "payments" },
-                { id: "team", label: "Team", symbol: "badge" },
-                { id: "audit", label: "Audit Logs", symbol: "terminal" }
+                { id: "team", label: "Team members", symbol: "badge" },
+                { id: "subscriptions", label: "Subscription plans", symbol: "autorenew" },
+                { id: "payments", label: "Payments", symbol: "payments" }
               ]
             },
             {
@@ -406,11 +632,10 @@ const OwnerDashboard = () => {
                   <button
                     key={menu.id}
                     onClick={() => handlePageChange(menu.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-semibold text-xs transition-all duration-150 text-left ${
-                      isActive
-                        ? "bg-indigo-50/80 text-indigo-600 shadow-sm"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-semibold text-xs transition-all duration-150 text-left ${isActive
+                      ? "bg-indigo-50/80 text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
                   >
                     <span className={`material-symbols-outlined text-[18px] ${isActive ? "text-indigo-600" : "text-slate-400"}`}>
                       {menu.symbol}
@@ -520,7 +745,6 @@ const OwnerDashboard = () => {
                           onClick={() => {
                             setIsProfileDropdownOpen(false);
                             logout();
-                            showToast("Signed out successfully", "info");
                           }}
                           className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                         >
@@ -590,6 +814,7 @@ const OwnerDashboard = () => {
               setBuilderTaxRate={setBuilderTaxRate}
               handleAddBuilderItem={handleAddBuilderItem}
               handleCreateInvoice={handleCreateInvoice}
+              handleGenerateInvoicePDF={handleGenerateInvoicePDF}
               showToast={showToast}
             />
           )}
@@ -605,37 +830,103 @@ const OwnerDashboard = () => {
                 <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-heading text-lg font-bold text-slate-900">Recurring Client Schedules</h4>
-                    <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">142 Active</span>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-indigo-600/10 text-indigo-700 text-[10px] font-bold px-2.5 py-1 rounded-full">142 Active</span>
+                      <button
+                        onClick={() => {
+                          setSelectedPublishSubId(subscriptions[0]?.id || "");
+                          setShowPublishModal(true);
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-sm outline-none cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">campaign</span>
+                        Publish Post
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {subscriptions.map(sub => {
                       const initialLetters = sub.client.split(" ").map(w => w.charAt(0)).join("").substring(0, 2).toUpperCase();
+                      const subPosts = subscriptionPosts.filter(p => p.subscriptionId === sub.id);
                       return (
-                        <div key={sub.id} className="p-4 bg-slate-50/50 rounded-xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-200/80 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                              {initialLetters}
-                            </div>
-                            <div>
-                              <h5 className="font-bold text-slate-900 text-sm">{sub.name}</h5>
-                              <p className="text-xs text-slate-500">Client entity: {sub.client} | Trial: {sub.trialDays} days</p>
+                        <div key={sub.id} className="bg-white border border-slate-100 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col hover:border-slate-200/80 transition-all duration-200 relative">
+
+                          {/* Big Size Logo / Banner Image */}
+                          <div className="w-full h-40 bg-indigo-50/50 border-b border-slate-100 overflow-hidden relative flex-shrink-0">
+                            {sub.imageUrl ? (
+                              <img src={sub.imageUrl} alt={sub.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600">
+                                <span className="material-symbols-outlined text-[36px] opacity-75">card_membership</span>
+                                <span className="text-[9px] font-extrabold tracking-widest uppercase mt-1">Standard Plan</span>
+                              </div>
+                            )}
+
+                            {/* Status Badge overlay */}
+                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                              <span className="text-[9px] font-extrabold text-emerald-800 uppercase tracking-wider">{sub.status}</span>
                             </div>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-6 text-xs w-full sm:w-auto justify-between sm:justify-end">
-                            <div className="text-left sm:text-right">
-                              <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">MONTHLY AMOUNT</span>
-                              <span className="font-bold text-slate-900 text-sm">₹{sub.price.toLocaleString()}</span>
+                          {/* Card Content Body */}
+                          <div className="p-5 flex-1 flex flex-col justify-between gap-4">
+                            <div>
+                              <h5 className="font-extrabold text-slate-900 text-base leading-snug">{sub.name}</h5>
+                              <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px] text-slate-400">person</span>
+                                Client: <span className="font-semibold text-slate-700">{sub.client}</span>
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px] text-slate-400">schedule</span>
+                                Trial: <span className="font-semibold text-slate-700">{sub.trialDays} days</span>
+                              </p>
                             </div>
-                            <div className="text-left sm:text-right">
-                              <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">STATUS</span>
-                              <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold uppercase text-[10px]">
-                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                                {sub.status}
-                              </span>
+
+                            <div className="flex justify-between items-center border-t border-slate-50 pt-4 mt-2">
+                              <div>
+                                <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-wider">MONTHLY BASE</span>
+                                <span className="font-extrabold text-slate-900 text-lg">₹{sub.price.toLocaleString()}</span>
+                              </div>
                             </div>
                           </div>
+
+                          {/* Announcements Feed inside the Card */}
+                          {subPosts.length > 0 && (
+                            <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-4">
+                              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">Announcements Feed</span>
+                              <div className="space-y-2.5">
+                                {subPosts.map(p => (
+                                  <div key={p.id} className="p-3 bg-white border border-slate-100 rounded-xl flex flex-col gap-2 shadow-[0_1px_2px_rgba(0,0,0,0.02)] animate-fade-in">
+                                    {p.imageUrl && (
+                                      <div className="w-full h-20 rounded-lg overflow-hidden border border-slate-100">
+                                        <img src={p.imageUrl} alt={p.title} className="w-full h-full object-cover" />
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex justify-between items-start gap-2">
+                                        <h6 className="font-extrabold text-xs text-slate-800 leading-snug">{p.title}</h6>
+                                        <span className="text-[8px] text-slate-400 font-bold whitespace-nowrap">{p.date}</span>
+                                      </div>
+                                      <p className="text-[10px] text-slate-500 font-medium leading-relaxed">{p.content}</p>
+                                      {p.attachment && (
+                                        <a
+                                          href={p.attachment.dataUrl}
+                                          download={p.attachment.name}
+                                          className="mt-1 self-start inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 text-indigo-700 text-[9px] font-bold rounded-lg transition-colors cursor-pointer"
+                                        >
+                                          <span className="material-symbols-outlined text-[12px]">download</span>
+                                          Download Attachment
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                         </div>
                       );
                     })}
@@ -677,7 +968,52 @@ const OwnerDashboard = () => {
                       </div>
                     </div>
 
-                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-md mt-2">
+                    <div>
+                      <label className="block text-slate-500 text-xs font-semibold mb-1 flex justify-between items-center">
+                        <span>Plan Icon / Logo</span>
+                        {newPlanImage && (
+                          <button
+                            type="button"
+                            onClick={() => setNewPlanImage("")}
+                            className="text-rose-600 font-bold text-[9px] uppercase cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </label>
+                      {newPlanImage ? (
+                        <div className="w-full h-20 rounded-xl overflow-hidden border border-slate-200 mb-2 relative group">
+                          <img src={newPlanImage} alt="Plan logo preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-slate-900/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-[9px] text-white font-bold bg-slate-950/60 px-2 py-0.5 rounded">Logo Selected</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center h-12 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-indigo-500/50 rounded-xl cursor-pointer transition-all select-none group">
+                          <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1 group-hover:text-indigo-600">
+                            <span className="material-symbols-outlined text-[14px]">image</span> Upload Custom Logo from PC
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setNewPlanImage(reader.result);
+                                  showToast("Plan logo loaded successfully!", "success");
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-md mt-2 cursor-pointer">
                       Initialize Plan
                     </button>
                   </form>
@@ -714,17 +1050,20 @@ const OwnerDashboard = () => {
                       </div>
                       <div className="text-right flex flex-col items-end gap-1 w-full sm:w-auto">
                         <h5 className="font-extrabold text-slate-900 text-sm">₹{p.amount.toLocaleString()}</h5>
-                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${
-                          p.status === "succeeded"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-red-50 text-red-700"
-                        }`}>{p.status}</span>
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${p.status === "succeeded"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-red-50 text-red-700"
+                          }`}>{p.status}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
+          )}
+
+          {activePage === "create-workspace" && (
+            <CreateWorkspaceTab />
           )}
 
           {activePage === "team" && (
@@ -883,11 +1222,10 @@ const OwnerDashboard = () => {
                             <td className="py-3.5 text-slate-500 font-medium">{log.details}</td>
                             <td className="py-3.5 text-slate-400 font-medium">{log.time}</td>
                             <td className="py-3.5">
-                              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                                log.status === "SUCCESS"
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
-                                  : "bg-rose-50 text-rose-700 border border-rose-200/50"
-                              }`}>{log.status}</span>
+                              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${log.status === "SUCCESS"
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                                : "bg-rose-50 text-rose-700 border border-rose-200/50"
+                                }`}>{log.status}</span>
                             </td>
                           </tr>
                         );
@@ -1266,7 +1604,7 @@ const OwnerDashboard = () => {
                   <span className="material-symbols-outlined text-indigo-600 text-[18px]">person</span>
                   <h4 className="font-heading text-base font-bold text-slate-900">Identity & Security</h4>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-slate-500 text-xs font-semibold mb-1">Full Name</label>
@@ -1280,12 +1618,12 @@ const OwnerDashboard = () => {
                     <label className="block text-slate-500 text-xs font-semibold mb-1">New Password</label>
                     <input type="password" placeholder="••••••••" className="w-full bg-slate-50/50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-sm font-semibold transition-all outline-none" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} />
                   </div>
-                  
+
                   <div className="flex items-center gap-2.5 py-1">
                     <input type="checkbox" id="2fa" className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20 w-4 h-4 cursor-pointer" checked={enable2FA} onChange={(e) => setEnable2FA(e.target.checked)} />
                     <label htmlFor="2fa" className="text-xs font-semibold text-slate-600 cursor-pointer select-none">Enable Two-Factor Authentication (MFA)</label>
                   </div>
-                  
+
                   <button onClick={() => showToast("Personal profile specifications updated.", "success")} className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-xl font-bold text-xs transition-colors shadow-md w-fit flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-[14px]">save</span>
                     Update Account
@@ -1316,18 +1654,17 @@ const OwnerDashboard = () => {
 
               <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col overflow-hidden">
                 {notifications.map((n, i) => (
-                  <div key={n.id} className={`p-5 flex justify-between items-center transition-all border-b border-slate-50 last:border-b-0 ${
-                    n.read
-                      ? "text-slate-400/90 opacity-70"
-                      : "bg-white text-slate-900 font-bold border-l-[3px] border-l-indigo-600 pl-[17px]"
-                  }`}>
+                  <div key={n.id} className={`p-5 flex justify-between items-center transition-all border-b border-slate-50 last:border-b-0 ${n.read
+                    ? "text-slate-400/90 opacity-70"
+                    : "bg-white text-slate-900 font-bold border-l-[3px] border-l-indigo-600 pl-[17px]"
+                    }`}>
                     <div className="flex items-center gap-3.5 min-w-0">
                       {!n.read && <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full flex-shrink-0 animate-pulse"></span>}
                       <div>
                         {n.text.includes("paid Invoice") ? (
                           <p className="text-xs text-slate-900 font-bold">
                             <span className="text-indigo-600">{n.text.split("paid Invoice")[0]}</span>
-                            paid Invoice 
+                            paid Invoice
                             <span className="font-mono text-indigo-700 bg-indigo-50/80 px-1 py-0.5 rounded text-[10px] mx-1 font-bold">{n.text.split("paid Invoice")[1]?.split(" ")[1]}</span>
                             {n.text.split("paid Invoice")[1]?.split(" ")?.slice(2)?.join(" ")}
                           </p>
@@ -1344,7 +1681,7 @@ const OwnerDashboard = () => {
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex-shrink-0 ml-3">{n.time}</span>
                   </div>
                 ))}
-                
+
                 <div className="p-5 flex justify-between items-center border-b border-slate-50 last:border-b-0 text-slate-400/90 opacity-70">
                   <div className="flex items-center gap-3.5 min-w-0">
                     <div className="pl-3.5">
@@ -1407,6 +1744,221 @@ const OwnerDashboard = () => {
 
         </div>
       </main>
+
+      {/* Centralized Publish Announcement Modal */}
+      {showPublishModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col">
+
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-indigo-600">publish</span>
+                <h5 className="font-heading font-extrabold text-slate-900 text-base">Publish Announcement</h5>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPublishModal(false);
+                  setNewPostTitle("");
+                  setNewPostContent("");
+                  setNewPostImage("");
+                  setNewPostAttachment(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 material-symbols-outlined cursor-pointer"
+              >
+                close
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <label className="block text-slate-500 text-xs font-semibold mb-1">Select Subscription Plan</label>
+                <select
+                  className="w-full bg-slate-50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none transition-all"
+                  value={selectedPublishSubId}
+                  onChange={(e) => setSelectedPublishSubId(e.target.value)}
+                >
+                  <option value="">-- Choose a Subscription Plan --</option>
+                  {subscriptions.map(sub => (
+                    <option key={sub.id} value={sub.id}>{sub.name} ({sub.client})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-500 text-xs font-semibold mb-1">Post Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Server Maintenance Notice"
+                  className="w-full bg-slate-50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none transition-all"
+                  value={newPostTitle}
+                  onChange={(e) => setNewPostTitle(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-500 text-xs font-semibold mb-1">Update Details</label>
+                <textarea
+                  placeholder="Provide description of the release, server details..."
+                  rows="4"
+                  className="w-full bg-slate-50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none transition-all resize-none"
+                  value={newPostContent}
+                  onChange={(e) => setNewPostContent(e.target.value)}
+                />
+              </div>
+
+              {/* Cover Image Selector */}
+              <div>
+                <label className="block text-slate-500 text-xs font-semibold mb-1.5 flex justify-between items-center">
+                  <span>Announcement Cover Image</span>
+                  {newPostImage && (
+                    <button
+                      type="button"
+                      onClick={() => setNewPostImage("")}
+                      className="text-rose-600 hover:text-rose-800 font-bold text-[9px] uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </label>
+
+                {newPostImage && (
+                  <div className="w-full h-28 rounded-xl overflow-hidden border border-slate-200 mb-2 shadow-sm">
+                    <img src={newPostImage} alt="Cover Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <label className="flex flex-col items-center justify-center h-14 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-indigo-500/50 rounded-xl cursor-pointer transition-all group select-none">
+                    <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1 group-hover:text-indigo-600">
+                      <span className="material-symbols-outlined text-[16px]">upload_file</span> Upload Cover
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setNewPostImage(reader.result);
+                            showToast("Cover image loaded successfully!", "success");
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { name: "Alert", url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80" },
+                      { name: "Metrics", url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80" },
+                      { name: "Network", url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80" }
+                    ].map(img => (
+                      <button
+                        key={img.name}
+                        type="button"
+                        onClick={() => setNewPostImage(img.url)}
+                        className={`relative h-14 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${newPostImage === img.url ? "border-indigo-600 scale-[0.96]" : "border-transparent opacity-75 hover:opacity-100"
+                          }`}
+                      >
+                        <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Uploader */}
+              <div>
+                <label className="block text-slate-500 text-xs font-semibold mb-1.5 flex justify-between items-center">
+                  <span>Attach Reference Document (Optional)</span>
+                  {newPostAttachment && (
+                    <button
+                      type="button"
+                      onClick={() => setNewPostAttachment(null)}
+                      className="text-rose-600 font-bold text-[9px] uppercase cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </label>
+                {newPostAttachment ? (
+                  <div className="p-3 bg-indigo-50/30 rounded-xl border border-indigo-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-indigo-600">description</span>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-700 max-w-[150px] truncate">{newPostAttachment.name}</span>
+                        <span className="text-[9px] text-slate-400 font-semibold">{newPostAttachment.size}</span>
+                      </div>
+                    </div>
+                    <span className="bg-indigo-100 text-indigo-800 text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase">Attached</span>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 rounded-xl cursor-pointer transition-all group select-none">
+                    <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-indigo-600">attach_file</span>
+                    <span className="text-xs text-slate-500 font-bold group-hover:text-indigo-600">Attach PDF or Document from PC</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const sizeKb = Math.round(file.size / 1024);
+                            setNewPostAttachment({
+                              name: file.name,
+                             size: sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`,
+                              dataUrl: reader.result
+                            });
+                            showToast(`Attached file: ${file.name}!`, "success");
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-5 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
+              <button
+                onClick={() => {
+                  setShowPublishModal(false);
+                  setNewPostTitle("");
+                  setNewPostContent("");
+                  setNewPostImage("");
+                  setNewPostAttachment(null);
+                }}
+                className="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!selectedPublishSubId) {
+                    showToast("Please choose a subscription plan first!", "warning");
+                    return;
+                  }
+                  handlePublishPost(selectedPublishSubId);
+                  setShowPublishModal(false);
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                Publish Post
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

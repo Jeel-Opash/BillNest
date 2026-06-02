@@ -9,7 +9,7 @@ const AdminDashboardTab = ({
   handlePageChange,
   showToast
 }) => {
-  // Fetch pending requests for dashboard widget
+
   const [pendingRequests, setPendingRequests] = useState([]);
   useEffect(() => {
     const fetchPending = async () => {
@@ -27,9 +27,9 @@ const AdminDashboardTab = ({
     }
   }, [user]);
 
-  // Compute metrics
+
   const totalClients = clients.length;
-  const activeSubs = 3; // Mock sub count
+  const activeSubs = 3;
   const pendingInvoices = invoices.filter(i => i.status === "sent" || i.status === "draft").length;
   const paidInvoices = invoices.filter(i => i.status === "paid").length;
   const revenueThisMonth = invoices.filter(i => i.status === "paid").reduce((acc, curr) => acc + curr.amount, 0);

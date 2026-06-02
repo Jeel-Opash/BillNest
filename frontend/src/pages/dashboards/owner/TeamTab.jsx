@@ -5,24 +5,24 @@ import axios from "axios";
 const TeamTab = ({ teamList, setTeamList, showToast }) => {
   const { user } = useAuth();
   
-  // Local states
-  const [activeSubTab, setActiveSubTab] = useState("members"); // 'members' | 'requests' | 'history'
+
+  const [activeSubTab, setActiveSubTab] = useState("members");
   const [accessCode, setAccessCode] = useState("Loading...");
   const [isRegeneratingCode, setIsRegeneratingCode] = useState(false);
 
-  // Join Requests state
+
   const [pendingRequests, setPendingRequests] = useState([]);
   const [requestHistory, setRequestHistory] = useState([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
 
-  // Actions states (modals/inputs)
-  const [selectedRequest, setSelectedRequest] = useState(null); // request being processed
-  const [actionType, setActionType] = useState(""); // 'approve' | 'reject'
+
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [actionType, setActionType] = useState("");
   const [assignRole, setAssignRole] = useState("member");
   const [responseNotes, setResponseNotes] = useState("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
-  // Fetch Team Members
+
   const fetchTeammates = async () => {
     try {
       const res = await axios.get("/auth/team/members");
@@ -42,7 +42,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     }
   };
 
-  // Fetch Organization Access Code
+
   const fetchAccessCode = async () => {
     try {
       const res = await axios.get("/auth/organization/code");
@@ -54,7 +54,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     }
   };
 
-  // Fetch Pending Requests & History
+
   const fetchRequestsData = async () => {
     setIsLoadingRequests(true);
     try {
@@ -81,13 +81,13 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     fetchRequestsData();
   }, []);
 
-  // Copy Code to Clipboard
+
   const handleCopyCode = () => {
     navigator.clipboard.writeText(accessCode);
     showToast("Access code copied to clipboard!", "success");
   };
 
-  // Regenerate Access Code
+
   const handleRegenerateCode = async () => {
     if (!window.confirm("Are you sure you want to regenerate the access code? Any user with the old code won't be able to request access.")) return;
     
@@ -106,12 +106,12 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     }
   };
 
-  // Delete/Remove Teammate
+
   const handleDeleteTeammate = async (id, name) => {
     if (!window.confirm(`Are you sure you want to remove ${name} from this workspace?`)) return;
     try {
-      // In a real system, we'd hit DELETE /api/auth/team/members/:id.
-      // For now, we update client-side list and simulate database persistence.
+
+
       setTeamList(teamList.filter(t => t.id !== id));
       showToast(`Teammate ${name} removed from workspace.`, "info");
     } catch (err) {
@@ -119,7 +119,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     }
   };
 
-  // Submit Process Action (Approve / Reject)
+
   const handleProcessSubmit = async (e) => {
     e.preventDefault();
     if (!selectedRequest) return;
@@ -137,7 +137,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
         showToast(`Join request ${actionType === "approve" ? "approved" : "rejected"} successfully!`, "success");
         setSelectedRequest(null);
         setResponseNotes("");
-        // Reload all data
+
         fetchTeammates();
         fetchRequestsData();
       }
@@ -149,10 +149,10 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     }
   };
 
-  // Update Teammate Role
+
   const handleUpdateTeammateRole = async (userId, newRole) => {
     try {
-      // For now, we update local state and simulate API call.
+
       setTeamList(teamList.map(t => t.id === userId ? { ...t, role: newRole } : t));
       showToast(`Role updated to ${newRole.toUpperCase()} successfully.`, "success");
     } catch (err) {
@@ -160,7 +160,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     }
   };
 
-  // Render Role Badge helper
+
   const renderRoleBadge = (role) => {
     const isOwner = role === "owner";
     const isAdmin = role === "admin";

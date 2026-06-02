@@ -310,7 +310,7 @@ export const processJoinRequestController = async (req, res) => {
     const { action, finalRole, notes } = req.body;
     const request = await AuthService.processJoinRequest(id, req.user.userId, { action, finalRole, notes });
 
-    // Audit Logging
+
     await AuditService.logAction(
       req.user.organizationId,
       req.user.userId,
@@ -333,7 +333,7 @@ export const getAccessCodeController = async (req, res) => {
     if (!org) {
       return res.status(404).json({ success: false, message: "Organization not found" });
     }
-    // Auto-generate if not set
+
     if (!org.accessCode) {
       org.accessCode = "ORG-" + Math.random().toString(36).substr(2, 6).toUpperCase();
       await org.save();
@@ -347,7 +347,7 @@ export const getAccessCodeController = async (req, res) => {
 export const regenerateAccessCodeController = async (req, res) => {
   try {
     const accessCode = await AuthService.regenerateAccessCode(req.user.organizationId);
-    // Audit log
+
     await AuditService.logAction(
       req.user.organizationId,
       req.user.userId,

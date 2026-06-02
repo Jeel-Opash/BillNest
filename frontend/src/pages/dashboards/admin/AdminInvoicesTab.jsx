@@ -10,7 +10,7 @@ const AdminInvoicesTab = ({
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingInvoice, setEditingInvoice] = useState(null);
 
-  // Form states
+
   const [builderClient, setBuilderClient] = useState(clients[0]?.company || "");
   const [builderNumber, setBuilderNumber] = useState(`INV-2026-${String(invoices.length + 1).padStart(4, "0")}`);
   const [builderDueDate, setBuilderDueDate] = useState(new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]);
@@ -18,7 +18,7 @@ const AdminInvoicesTab = ({
   const [builderDiscount, setBuilderDiscount] = useState(0);
   const [builderTaxRate, setBuilderTaxRate] = useState(18);
 
-  // Line item states
+
   const [itemDesc, setItemDesc] = useState("");
   const [itemQty, setItemQty] = useState(1);
   const [itemPrice, setItemPrice] = useState(0);
@@ -53,7 +53,7 @@ const AdminInvoicesTab = ({
     setBuilderItems(builderItems.filter((_, i) => i !== idx));
   };
 
-  // Math derivations
+
   const subtotal = useMemo(() => {
     return builderItems.reduce((acc, curr) => acc + curr.qty * curr.price, 0);
   }, [builderItems]);

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 const AdminAuditTab = () => {
-  // Mock audit records with append-only ledger items
+
   const [logs] = useState([
     { id: "log_1", user: "priya@codecraft.com", role: "admin", action: "INVOICE_CREATED", module: "Invoices", ip: "192.168.1.52", timestamp: "2026-06-02 10:48:12", status: "success" },
     { id: "log_2", user: "priya@codecraft.com", role: "admin", action: "CLIENT_UPDATED", module: "Clients", ip: "192.168.1.52", timestamp: "2026-06-02 10:40:24", status: "success" },

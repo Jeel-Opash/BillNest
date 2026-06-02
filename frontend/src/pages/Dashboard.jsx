@@ -205,12 +205,10 @@ const MetricCard = ({ metric }) => {
 const Dashboard = () => {
   const { user, localInvitations, acceptLocalInvitation, declineLocalInvitation } = useAuth();
 
-  // Locate any pending invitation sent to the logged-in user's email
   const pendingInvite = localInvitations?.find(
     (invite) => invite.email.toLowerCase() === user?.email?.toLowerCase() && invite.status === "pending"
   );
 
-  // Intercept and prompt user if a role promotion or workspace invitation is pending
   if (pendingInvite) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 animate-fade-in">
@@ -265,7 +263,6 @@ const Dashboard = () => {
 
   const role = normalizeRole(user?.role);
 
-  // Dynamic high-fidelity dashboard dispatch based on role privilege levels
   if (role === "owner") return <OwnerDashboard />;
   if (role === "admin") return <AdminDashboard />;
   if (role === "member") return <MemberDashboard />;

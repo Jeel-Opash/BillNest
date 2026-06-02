@@ -18,10 +18,10 @@ const OverviewTab = ({
   teamList = [],
   auditLogs = []
 }) => {
-  // Brand Accent State
+
   const [brandColor, setBrandColor] = useState("indigo");
 
-  // Fetch pending requests for dashboard warning card
+
   const [pendingRequests, setPendingRequests] = useState([]);
   useEffect(() => {
     const fetchPending = async () => {
@@ -49,7 +49,7 @@ const OverviewTab = ({
 
   const activeTheme = brandColors[brandColor] || brandColors.indigo;
 
-  // 1. DYNAMIC CALCULATIONS FOR THE 8 WIDGETS
+
   const totalRevenue = useMemo(() => {
     return invoices
       ?.filter(inv => inv.status?.toLowerCase() === "paid")
@@ -91,7 +91,7 @@ const OverviewTab = ({
     return teamList?.length || 0;
   }, [teamList]);
 
-  // SaaS Simulator calculations
+
   const [simCustomers, setSimCustomers] = useState(activeSubsCount > 0 ? activeSubsCount : 48);
   const [simPrice, setSimPrice] = useState(3000);
   const [simSignups, setSimSignups] = useState(5);
@@ -104,7 +104,7 @@ const OverviewTab = ({
   const arrValue = currentSimMrr * 12;
   const monthlyChurnLoss = churnedCustomersCount * simPrice;
 
-  // Webhook Tester State
+
   const [selectedEvent, setSelectedEvent] = useState("invoice.payment_succeeded");
   const [webhookLogs, setWebhookLogs] = useState([
     { id: "w1", event: "invoice.payment_succeeded", status: "delivered", time: "Just now", payload: "inv_stripe_88f2" },
@@ -124,8 +124,8 @@ const OverviewTab = ({
     setWebhookLogs([newLog, ...webhookLogs.slice(0, 4)]);
   };
 
-  // 2. CHART COMPUTATIONS
-  // Invoice Status Distribution (Circular/Ring doughnut helper)
+
+
   const statusSplit = useMemo(() => {
     const draft = invoices?.filter(i => i.status?.toLowerCase() === "draft")?.length || 0;
     const sent = invoices?.filter(i => i.status?.toLowerCase() === "sent")?.length || 0;
@@ -141,9 +141,9 @@ const OverviewTab = ({
     ];
   }, [invoices, paidInvoicesCount, overdueInvoicesCount]);
 
-  // Top Clients by Revenue
+
   const topClientsList = useMemo(() => {
-    // Group invoices by client and calculate revenue
+
     const clientRevenueMap = {};
     invoices.forEach(inv => {
       if (inv.status?.toLowerCase() === "paid") {
@@ -157,10 +157,10 @@ const OverviewTab = ({
       revenue: clientRevenueMap[name]
     }));
 
-    // Sort descending
+
     list.sort((a, b) => b.revenue - a.revenue);
 
-    // Fallbacks if no data exists to keep design premium
+
     if (list.length === 0) {
       return [
         { name: "ABC Food & Beverages", revenue: 342200, pct: 45, tier: "Enterprise" },

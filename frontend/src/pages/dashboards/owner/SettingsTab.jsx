@@ -8,7 +8,7 @@ const SettingsTab = ({
   const [localSettings, setLocalSettings] = useState({ ...orgSettings });
   const [logoPreview, setLogoPreview] = useState(orgSettings.logo || "");
 
-  // Handle Logo upload simulation
+
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {

@@ -17,17 +17,17 @@ const SubscriptionsTab = ({
   payments = [],
   showToast
 }) => {
-  // Sub-Tab inside subscriptions ('active' cards view, or 'announcements' log if desired)
+
   const [activePlanFilter, setActivePlanFilter] = useState("all");
 
-  // Announcement Modal State (Preserves high-fidelity community post feature)
+
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [selectedSubForPost, setSelectedSubForPost] = useState(null);
   const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
   const [postImage, setPostImage] = useState("");
 
-  // Simulated Announcement DB saved locally
+
   const [announcements, setAnnouncements] = useState(() => {
     try {
       const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_announcements`);
@@ -44,23 +44,23 @@ const SubscriptionsTab = ({
     localStorage.setItem(`workspace_${user?.email || "guest"}_announcements`, JSON.stringify(newAnn));
   };
 
-  // State for Billing History modal
+
   const [historyClientName, setHistoryClientName] = useState(null);
 
-  // State for Plan Modals
+
   const [editingPlan, setEditingPlan] = useState(null);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
-  // Creator Form Fields
+
   const [createName, setCreateName] = useState("");
-  const [createTier, setCreateTier] = useState("starter"); // Starter, Growth, Enterprise
+  const [createTier, setCreateTier] = useState("starter");
   const [createPrice, setCreatePrice] = useState(5000);
-  const [createCycle, setCreateCycle] = useState("monthly"); // Monthly, Quarterly, Yearly
+  const [createCycle, setCreateCycle] = useState("monthly");
   const [createClient, setCreateClient] = useState(clients[0]?.company || "");
   const [createTrial, setCreateTrial] = useState(0);
   const [createLogo, setCreateLogo] = useState("");
 
-  // 1. FILTER PLANS LOGIC
+
   const filteredSubs = useMemo(() => {
     return subscriptions.filter(sub => {
       if (activePlanFilter === "all") return true;
@@ -68,7 +68,7 @@ const SubscriptionsTab = ({
     });
   }, [subscriptions, activePlanFilter]);
 
-  // Compute total monthly base
+
   const totalMonthlyMRR = useMemo(() => {
     return subscriptions
       .filter(s => s.status?.toLowerCase() === "active")
@@ -80,9 +80,9 @@ const SubscriptionsTab = ({
       }, 0);
   }, [subscriptions]);
 
-  // 2. SUBSCRIPTION OPERATIONS
 
-  // Create Plan
+
+
   const handleCreatePlanSubmit = (e) => {
     e.preventDefault();
     if (!createName.trim()) {
@@ -105,7 +105,7 @@ const SubscriptionsTab = ({
     setSubscriptions([...subscriptions, newSub]);
     showToast(`Recurring Plan "${createName}" activated for ${newSub.client}!`, "success");
     
-    // Reset Form Fields
+
     setCreateName("");
     setCreateTier("starter");
     setCreatePrice(5000);
@@ -115,7 +115,7 @@ const SubscriptionsTab = ({
     setCreatingPlan(false);
   };
 
-  // Edit Plan
+
   const handleEditPlanSubmit = (e) => {
     e.preventDefault();
     if (!editingPlan.name.trim()) {
@@ -128,7 +128,7 @@ const SubscriptionsTab = ({
     setEditingPlan(null);
   };
 
-  // Toggle Suspend Plan
+
   const handleToggleSuspend = (subId, isSuspended) => {
     const nextStatus = isSuspended ? "active" : "suspended";
     setSubscriptions(subscriptions.map(s => s.id === subId ? { ...s, status: nextStatus } : s));
@@ -140,7 +140,7 @@ const SubscriptionsTab = ({
     );
   };
 
-  // Cancel Subscription
+
   const handleCancelSubscription = (subId, name) => {
     if (window.confirm(`Are you sure you want to cancel subscription plan "${name}"? This stops future recurring invoices permanently.`)) {
       setSubscriptions(subscriptions.map(s => s.id === subId ? { ...s, status: "cancelled" } : s));
@@ -148,7 +148,7 @@ const SubscriptionsTab = ({
     }
   };
 
-  // Publish Announcement Broadcast
+
   const handlePublishPost = (e) => {
     e.preventDefault();
     if (!postTitle.trim() || !postContent.trim()) {
@@ -175,7 +175,7 @@ const SubscriptionsTab = ({
     setSelectedSubForPost(null);
   };
 
-  // 3. LEDGER HISTORY LOOKUPS
+
   const scopedClientInvoices = useMemo(() => {
     if (!historyClientName) return [];
     return invoices.filter(inv => inv.client === historyClientName);
@@ -515,7 +515,7 @@ const SubscriptionsTab = ({
                 <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Plan Logo Cover URL (Optional)</label>
                 <input 
                   type="text" 
-                  placeholder="https://images.unsplash.com/..." 
+                  placeholder="https://images.unsplash.com/..."
                   className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 rounded-xl p-2.5 text-xs font-semibold outline-none transition-colors"
                   value={createLogo}
                   onChange={(e) => setCreateLogo(e.target.value)}
@@ -718,7 +718,7 @@ const SubscriptionsTab = ({
                 <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Attachment Graphic URL (Optional)</label>
                 <input 
                   type="text" 
-                  placeholder="https://images.unsplash.com/..." 
+                  placeholder="https://images.unsplash.com/..."
                   className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-600 rounded-xl p-2.5 text-xs font-semibold outline-none transition-colors"
                   value={postImage}
                   onChange={(e) => setPostImage(e.target.value)}

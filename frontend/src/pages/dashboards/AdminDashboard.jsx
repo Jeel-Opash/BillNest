@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
-// Modular tab components
+
 import AdminDashboardTab from "./admin/AdminDashboardTab";
 import AdminClientsTab from "./admin/AdminClientsTab";
 import AdminInvoicesTab from "./admin/AdminInvoicesTab";
@@ -38,7 +38,7 @@ const AdminDashboard = () => {
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
-  // States maintained for parity and interaction
+
   const [clients, setClients] = useState([
     { id: "c1", name: "ABC Restaurant", company: "ABC Food & Beverages", email: "owner@abcrestaurant.com", phone: "+91 98765 43210", taxId: "24ABCDE1234F1Z5", address: "Surat, Gujarat", currency: "INR", notes: "Prefers UPI payments", archived: false },
     { id: "c2", name: "Pixel Studio", company: "Pixel Creative Labs", email: "finance@pixelstudio.com", phone: "+91 99988 77766", taxId: "27PIXEL7788A1Z9", address: "Mumbai, Maharashtra", currency: "INR", notes: "Monthly billing cycle", archived: false },

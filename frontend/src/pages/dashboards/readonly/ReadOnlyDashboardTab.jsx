@@ -6,7 +6,7 @@ const ReadOnlyDashboardTab = ({
   payments,
   handlePageChange
 }) => {
-  // Derive Executive KPIs
+
   const totalRevenue = invoices.filter(i => i.status === "paid").reduce((acc, curr) => acc + curr.amount, 0);
   const mrr = 24000;
   const arr = mrr * 12;

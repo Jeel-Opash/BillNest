@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 const MemberActivityTab = () => {
-  // Activity timeline records
+
   const [activities] = useState([
     { id: "act_1", type: "invoice", detail: "Invoice INV-001 Created", desc: "Consulting base services drafted for Nike", time: "10 mins ago", status: "success" },
     { id: "act_2", type: "client", detail: "Client Nike Updated", desc: "Modified billing address and POC phone metrics", time: "1 hour ago", status: "success" },

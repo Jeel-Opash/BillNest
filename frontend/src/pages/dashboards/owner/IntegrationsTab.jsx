@@ -4,7 +4,7 @@ const IntegrationsTab = ({
   user,
   showToast
 }) => {
-  // --- API Keys State ---
+
   const [apiKeys, setApiKeys] = useState(() => {
     try {
       const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_api_keys`);
@@ -22,7 +22,7 @@ const IntegrationsTab = ({
 
   const [newKeyLabel, setNewKeyLabel] = useState("");
 
-  // --- Webhook URL State ---
+
   const [webhookUrl, setWebhookUrl] = useState(() => {
     return localStorage.getItem(`workspace_${user?.email || "guest"}_webhook_url`) || "https://hooks.zapier.com/hooks/catch/12345/abc";
   });
@@ -34,7 +34,7 @@ const IntegrationsTab = ({
   const [isStripeLive, setIsStripeLive] = useState(false);
   const [isWebhookEnabled, setIsWebhookEnabled] = useState(true);
 
-  // --- API Usage Logs State ---
+
   const [usageLogs] = useState([
     { id: "log_1", method: "GET", endpoint: "/api/v1/clients", status: 200, ip: "192.168.1.45", time: "10 mins ago" },
     { id: "log_2", method: "POST", endpoint: "/api/v1/invoices", status: 201, ip: "13.233.45.19", time: "1 hour ago" },
@@ -42,7 +42,7 @@ const IntegrationsTab = ({
     { id: "log_4", method: "POST", endpoint: "/api/v1/invoices/void", status: 400, ip: "54.120.9.110", time: "1 day ago" }
   ]);
 
-  // --- Handlers ---
+
   const handleCreateApiKeySubmit = (e) => {
     e.preventDefault();
     if (!newKeyLabel) return;

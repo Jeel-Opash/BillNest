@@ -4,11 +4,11 @@ const MemberProfileTab = ({
   user,
   showToast
 }) => {
-  // Profile settings state
+
   const [profileName, setProfileName] = useState(user?.name || "Amit Kumar");
   const [profileEmail, setProfileEmail] = useState(user?.email || "amit@codecraft.com");
 
-  // Password modification state
+
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

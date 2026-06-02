@@ -4,16 +4,16 @@ const AdminProfileTab = ({
   user,
   showToast
 }) => {
-  // Form parameters
+
   const [profileName, setProfileName] = useState(user?.name || "Priya Sharma");
   const [profileEmail, setProfileEmail] = useState(user?.email || "priya@codecraft.com");
 
-  // Password parameters
+
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Notification Preferences
+
   const [prefs, setPrefs] = useState({
     success: true,
     failed: true,

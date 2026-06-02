@@ -4,12 +4,12 @@ const AdminSettingsTab = ({
   user,
   showToast
 }) => {
-  // Mock settings values
+
   const [prefix, setPrefix] = useState("INV");
   const [currency, setCurrency] = useState("INR");
   const [timezone, setTimezone] = useState("UTC");
   
-  // API Keys state
+
   const [apiKeys, setApiKeys] = useState([
     { id: "key_1", name: "Stripe Production Hook", value: "bn_live_************************3a8d", created: "2026-06-01", active: true },
     { id: "key_2", name: "QuickBooks Sync", value: "bn_live_************************8f9c", created: "2026-05-15", active: false }

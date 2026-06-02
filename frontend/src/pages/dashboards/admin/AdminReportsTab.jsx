@@ -130,7 +130,7 @@ const AdminReportsTab = ({
     showToast(`PDF generated for ${reportType.toUpperCase()} report!`, "success");
   };
 
-  // Filter values
+
   const filteredInvoices = invoices.filter(inv => {
     const matchClient = filterClient === "all" || inv.client === filterClient;
     const matchStatus = filterStatus === "all" || inv.status === filterStatus;

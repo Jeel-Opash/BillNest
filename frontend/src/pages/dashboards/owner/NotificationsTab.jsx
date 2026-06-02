@@ -4,7 +4,7 @@ const NotificationsTab = ({
   user,
   showToast
 }) => {
-  // --- Notifications State ---
+
   const [notifications, setNotifications] = useState([
     {
       id: "notif_1",
@@ -68,7 +68,7 @@ const NotificationsTab = ({
     ? notifications
     : notifications.filter(n => n.type === filterType);
 
-  // Icon mapping helper
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case "payment_success":

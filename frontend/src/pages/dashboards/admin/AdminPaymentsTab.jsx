@@ -22,7 +22,7 @@ const AdminPaymentsTab = ({
     showToast(`Refund processed for transaction ${id}.`, "info");
   };
 
-  // Computations
+
   const totalRevenue = payments.filter(p => p.status === "successful").reduce((acc, curr) => acc + curr.amount, 0);
   const successfulCount = payments.filter(p => p.status === "successful").length;
   const failedCount = payments.filter(p => p.status === "failed").length;

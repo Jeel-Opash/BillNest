@@ -4,7 +4,7 @@ const AuditLogsTab = ({
   user,
   showToast
 }) => {
-  // --- Persistent or Initial Mock Audit Logs state ---
+
   const [logs] = useState([
     {
       id: "log_001",
@@ -78,7 +78,7 @@ const AuditLogsTab = ({
   const [selectedModule, setSelectedModule] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
-  // Filtering Logic
+
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
       const matchesSearch =
@@ -94,7 +94,7 @@ const AuditLogsTab = ({
     });
   }, [logs, searchTerm, selectedModule, selectedStatus]);
 
-  // Module style mapping
+
   const getModuleBadgeColor = (mod) => {
     switch (mod) {
       case "Invoice Management":

@@ -4,16 +4,16 @@ const ReadOnlyProfileTab = ({
   user,
   showToast
 }) => {
-  // Profile settings state
+
   const [profileName, setProfileName] = useState(user?.name || "Auditor Observer");
   const [profileEmail] = useState(user?.email || "auditor@codecraft.com");
 
-  // Password modification state
+
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Notification preferences
+
   const [preferences, setPreferences] = useState({
     payments: true,
     subscriptions: true,

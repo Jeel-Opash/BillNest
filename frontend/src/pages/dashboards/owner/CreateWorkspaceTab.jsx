@@ -15,7 +15,7 @@ const CreateWorkspaceTab = () => {
   const [memberEmail, setMemberEmail] = useState("");
   const [isProvisioning, setIsProvisioning] = useState(false);
 
-  // Keep track of the active provisioned workspace to show in the invitation receiver panel
+
   const [lastProvisionedOrg, setLastProvisionedOrg] = useState(null);
 
   const handleProvisionWorkspace = async (e) => {
@@ -32,12 +32,12 @@ const CreateWorkspaceTab = () => {
     try {
       setIsProvisioning(true);
       
-      // 1. Create the Workspace
+
       const res = await createWorkspace(orgName, planLevel, currency);
       if (res.success) {
         const mockOrgId = "org_" + Math.random().toString(36).substr(2, 9);
         
-        // 2. Dispatch Local Invitations
+
         addLocalInvitation(adminEmail.toLowerCase(), "admin", orgName);
         addLocalInvitation(memberEmail.toLowerCase(), "member", orgName);
 
@@ -50,7 +50,7 @@ const CreateWorkspaceTab = () => {
 
         showToast(`Workspace '${orgName}' initialized! Requests dispatched to ${adminEmail} & ${memberEmail}.`, "success");
         
-        // Reset invite fields
+
         setAdminEmail("");
         setMemberEmail("");
       }
@@ -63,7 +63,7 @@ const CreateWorkspaceTab = () => {
   };
 
   const handleTakeRequest = (email, role, orgName, orgId) => {
-    // Locate the local invitation to mark it accepted
+
     const invite = localInvitations.find(
       inv => inv.email.toLowerCase() === email.toLowerCase() && inv.orgName === orgName && inv.status === "pending"
     );
@@ -78,14 +78,14 @@ const CreateWorkspaceTab = () => {
       }
     }
 
-    // Programmatically switch session using our new AuthContext method!
+
     simulateLoginAs(email, role, orgName, orgId);
     
-    // Redirect to home dashboard with new role
+
     navigate("/dashboard");
   };
 
-  // Filter invitations to display only pending requests sent under the current preview session
+
   const activePendingInvites = localInvitations.filter(
     inv => inv.status === "pending" && (lastProvisionedOrg ? inv.orgName === lastProvisionedOrg.name : true)
   );

@@ -7,7 +7,7 @@ const MemberDashboardTab = ({
   handlePageChange,
   showToast
 }) => {
-  // Derive metrics scoped to the active member
+
   const myClientsCount = clients.length;
   const myInvoicesCount = invoices.length;
   const pendingInvoices = invoices.filter(i => i.status === "pending" || i.status === "draft").length;

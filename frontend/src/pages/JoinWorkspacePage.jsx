@@ -7,9 +7,9 @@ const JoinWorkspacePage = () => {
   const { user, showToast } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState("join"); // 'join' | 'requests'
+  const [activeTab, setActiveTab] = useState("join");
 
-  // Join Form State
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState(null);
@@ -19,11 +19,11 @@ const JoinWorkspacePage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  // My Requests State
+
   const [myRequests, setMyRequests] = useState([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
 
-  // Search Organizations
+
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -47,7 +47,7 @@ const JoinWorkspacePage = () => {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
-  // Load My Requests
+
   const fetchMyRequests = async () => {
     setIsLoadingRequests(true);
     try {

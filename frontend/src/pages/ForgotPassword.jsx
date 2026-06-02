@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 const ForgotPassword = () => {
   const { forgotPassword, resetPassword, showToast } = useAuth();
 
-  // Stages: 'request', 'update', 'success'
+
   const [stage, setStage] = useState("request");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
@@ -16,7 +16,7 @@ const ForgotPassword = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Stage 1: Request Recovery Code
+
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
     if (!email) return;
@@ -26,7 +26,7 @@ const ForgotPassword = () => {
       const res = await forgotPassword(email);
       if (res.success) {
         setSimulatedToken(res.resetToken);
-        setToken(res.resetToken); // Pre-fill token for test convenience
+        setToken(res.resetToken);
         setStage("update");
         showToast("Password reset authorization code generated!", "success");
       }
@@ -37,7 +37,7 @@ const ForgotPassword = () => {
     }
   };
 
-  // Stage 2: Update Credentials
+
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     if (!token || !password || !confirmPassword) return;

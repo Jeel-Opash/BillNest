@@ -29,27 +29,27 @@ const ClientsTab = ({
   handleAddClient,
   showToast
 }) => {
-  // State for search and filter
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // State for active views/modals
+
   const [selectedProfileClient, setSelectedProfileClient] = useState(null);
   const [editingClient, setEditingClient] = useState(null);
 
-  // Helper: Get Lifetime Paid Revenue for a client company
+
   const getClientRevenue = (companyName) => {
     return invoices
       ?.filter(inv => inv.client === companyName && inv.status?.toLowerCase() === "paid")
       ?.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0) || 0;
   };
 
-  // Helper: Get Invoice Count for a client company
+
   const getClientInvoiceCount = (companyName) => {
     return invoices?.filter(inv => inv.client === companyName)?.length || 0;
   };
 
-  // 1. FILTER AND SEARCH LOGIC
+
   const filteredClients = useMemo(() => {
     return clients.filter(c => {
       const company = c.company || "";
@@ -70,7 +70,7 @@ const ClientsTab = ({
     });
   }, [clients, searchTerm, statusFilter]);
 
-  // Total active clients metrics
+
   const activeCount = useMemo(() => {
     return clients.filter(c => (c.status || "active").toLowerCase() === "active").length;
   }, [clients]);
@@ -81,7 +81,7 @@ const ClientsTab = ({
       ?.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0) || 0;
   }, [invoices]);
 
-  // 2. CLIENT MUTATION HANDLERS (EDIT & DELETE)
+
   const handleDeleteClick = (clientId, companyName) => {
     if (window.confirm(`Are you sure you want to remove client "${companyName}"? This will untether their profile data.`)) {
       setClients(clients.filter(c => c.id !== clientId));
@@ -103,13 +103,13 @@ const ClientsTab = ({
     showToast(`Client "${editingClient.company}" updated successfully.`, "success");
     setEditingClient(null);
     
-    // Refresh active profile view if open
+
     if (selectedProfileClient?.id === editingClient.id) {
       setSelectedProfileClient(editingClient);
     }
   };
 
-  // Custom Local Submit wrapping for Create Form to support Status default & initial fields
+
   const [newClientStatus, setNewClientStatus] = useState("active");
   const [newClientNotes, setNewClientNotes] = useState("");
 
@@ -135,7 +135,7 @@ const ClientsTab = ({
 
     setClients([...clients, newClientObj]);
     
-    // Reset Form Fields
+
     setNewClientCompany("");
     setNewClientName("");
     setNewClientEmail("");

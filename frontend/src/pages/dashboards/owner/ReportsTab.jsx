@@ -16,31 +16,31 @@ const ReportsTab = ({
   payments = [],
   showToast
 }) => {
-  // --- Tab States ---
-  const [activeReport, setActiveReport] = useState("revenue"); // revenue, invoice, client, subscription, tax
 
-  // --- Filter States ---
+  const [activeReport, setActiveReport] = useState("revenue");
+
+
   const [startDate, setStartDate] = useState("2026-01-01");
   const [endDate, setEndDate] = useState("2026-12-31");
   const [selectedClient, setSelectedClient] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedCurrency, setSelectedCurrency] = useState("all");
 
-  // --- Scoped Data Calculation using Filters ---
+
   const filteredData = useMemo(() => {
-    // 1. Filter Invoices based on criteria
+
     const invFiltered = invoices.filter(inv => {
       const matchDate = (!startDate || inv.date >= startDate) && (!endDate || inv.date <= endDate);
       const matchClient = selectedClient === "all" || inv.client === selectedClient;
       const matchStatus = selectedStatus === "all" || inv.status?.toLowerCase() === selectedStatus.toLowerCase();
-      // Default currency match based on client currency
+
       const clientDetails = clients.find(c => c.company === inv.client);
       const matchCurrency = selectedCurrency === "all" || (clientDetails?.currency || "INR") === selectedCurrency;
 
       return matchDate && matchClient && matchStatus && matchCurrency;
     });
 
-    // 2. Filter Payments based on criteria
+
     const payFiltered = payments.filter(p => {
       const matchDate = (!startDate || p.date >= startDate) && (!endDate || p.date <= endDate);
       const matchClient = selectedClient === "all" || p.client === selectedClient;
@@ -50,7 +50,7 @@ const ReportsTab = ({
       return matchDate && matchClient && matchStatus && matchCurrency;
     });
 
-    // 3. Filter Subscriptions based on criteria
+
     const subFiltered = subscriptions.filter(s => {
       const matchClient = selectedClient === "all" || s.client === selectedClient;
       const matchStatus = selectedStatus === "all" || s.status?.toLowerCase() === selectedStatus.toLowerCase();
@@ -64,9 +64,9 @@ const ReportsTab = ({
     };
   }, [invoices, payments, subscriptions, clients, startDate, endDate, selectedClient, selectedStatus, selectedCurrency]);
 
-  // --- Metrics Computations ---
+
   const reportMetrics = useMemo(() => {
-    // A. Revenue calculations
+
     const grossRevenue = filteredData.payments
       .filter(p => p.status?.toLowerCase() === "succeeded")
       .reduce((sum, p) => sum + Number(p.amount), 0);
@@ -77,7 +77,7 @@ const ReportsTab = ({
 
     const netRevenue = grossRevenue - refundedAmount;
 
-    // B. Invoice calculations
+
     const totalInvoicesVal = filteredData.invoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
     const paidInvoicesVal = filteredData.invoices
       .filter(inv => inv.status?.toLowerCase() === "paid")
@@ -86,13 +86,13 @@ const ReportsTab = ({
       .filter(inv => inv.status?.toLowerCase() === "sent" || inv.status?.toLowerCase() === "overdue")
       .reduce((sum, inv) => sum + Number(inv.amount), 0);
 
-    // C. Tax calculations
-    // Assuming 18% average tax computed from the invoices if tax prefix exists
+
+
     const collectedTax = filteredData.invoices
       .filter(inv => inv.status?.toLowerCase() === "paid")
       .reduce((sum, inv) => {
         const amt = Number(inv.amount) || 0;
-        // Extrapolate 18% tax from gross amount: tax = amt - (amt / 1.18)
+
         return sum + Math.round(amt - (amt / 1.18));
       }, 0);
 
@@ -107,9 +107,9 @@ const ReportsTab = ({
     };
   }, [filteredData]);
 
-  // --- Export Handlers ---
 
-  // Export to CSV
+
+
   const handleExportCSV = () => {
     let headers = [];
     let rows = [];
@@ -157,7 +157,7 @@ const ReportsTab = ({
     showToast(`${activeReport.toUpperCase()} report exported in CSV format.`, "success");
   };
 
-  // Export to Excel (Generates a tab-separated Excel format download)
+
   const handleExportExcel = () => {
     let content = "";
     let filename = `BillNest_${activeReport}_sheet.xls`;
@@ -181,7 +181,7 @@ const ReportsTab = ({
     showToast(`${activeReport.toUpperCase()} spreadsheet downloaded.`, "success");
   };
 
-  // Export to PDF (Renders clean report printout)
+
   const handleExportPDF = () => {
     const printWindow = window.open("", "_blank");
     printWindow.document.write(`

@@ -14,15 +14,15 @@ const InvoicesTab = ({
   setInvoices,
   showToast
 }) => {
-  // Navigation inside the invoices tab
-  const [currentSubTab, setCurrentSubTab] = useState("all"); // 'all' or 'editor'
 
-  // Search & Filter State
+  const [currentSubTab, setCurrentSubTab] = useState("all");
+
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // State for Invoice Editor (Creating or Editing Draft)
-  const [editingInvoiceId, setEditingInvoiceId] = useState(null); // Null if creating
+
+  const [editingInvoiceId, setEditingInvoiceId] = useState(null);
   const [editorInvNumber, setEditorInvNumber] = useState("");
   const [editorClient, setEditorClient] = useState("");
   const [editorDueDate, setEditorDueDate] = useState("");
@@ -30,13 +30,13 @@ const InvoicesTab = ({
   const [editorTaxRate, setEditorTaxRate] = useState(18);
   const [editorNotes, setEditorNotes] = useState("");
   
-  // Editor Line Items State
+
   const [editorItems, setEditorItems] = useState([]);
   const [newItemDesc, setNewItemDesc] = useState("");
   const [newItemQty, setNewItemQty] = useState(1);
   const [newItemPrice, setNewItemPrice] = useState(0);
 
-  // 1. DYNAMIC CALCULATIONS FOR THE EDITOR
+
   const editorSubtotal = useMemo(() => {
     return editorItems.reduce((acc, it) => acc + (it.qty * it.price), 0);
   }, [editorItems]);
@@ -53,27 +53,27 @@ const InvoicesTab = ({
     return Math.max(0, editorSubtotal - editorDiscountAmount + editorTaxAmount);
   }, [editorSubtotal, editorDiscountAmount, editorTaxAmount]);
 
-  // 2. INVOICE STATE MACHINE OPERATIONS
 
-  // Mark Paid
+
+
   const handleMarkPaid = (invId) => {
     setInvoices(invoices.map(i => i.id === invId ? { ...i, status: "paid" } : i));
     showToast(`Invoice ${invId} successfully marked as PAID.`, "success");
   };
 
-  // Void Invoice
+
   const handleVoidInvoice = (invId) => {
     setInvoices(invoices.map(i => i.id === invId ? { ...i, status: "void" } : i));
     showToast(`Invoice ${invId} has been VOIDED.`, "info");
   };
 
-  // Send Invoice
+
   const handleSendInvoice = (invId) => {
     setInvoices(invoices.map(i => i.id === invId ? { ...i, status: "sent" } : i));
     showToast(`Invoice ${invId} successfully sent to client. Status updated to SENT.`, "success");
   };
 
-  // Duplicate Invoice
+
   const handleDuplicateInvoice = (inv) => {
     const nextNum = Math.floor(1000 + Math.random() * 9000);
     const duplicated = {
@@ -86,7 +86,7 @@ const InvoicesTab = ({
     showToast(`Invoice ${inv.id} duplicated into new Draft INV-${nextNum}!`, "success");
   };
 
-  // Delete Invoice
+
   const handleDeleteInvoice = (invId) => {
     if (window.confirm(`Are you sure you want to delete invoice ${invId}?`)) {
       setInvoices(invoices.filter(i => i.id !== invId));
@@ -94,7 +94,7 @@ const InvoicesTab = ({
     }
   };
 
-  // Load Invoice into Editor (Edit Draft)
+
   const handleLoadEditDraft = (inv) => {
     if (inv.status !== "draft") {
       showToast("Only DRAFT invoices can be edited.", "error");
@@ -112,12 +112,12 @@ const InvoicesTab = ({
     showToast(`Draft ${inv.id} loaded into Editor.`, "info");
   };
 
-  // Initialize fresh Creator view
+
   const handleInitCreateTab = () => {
     setEditingInvoiceId(null);
     setEditorInvNumber(`INV-${Math.floor(1000 + Math.random() * 9000)}`);
     setEditorClient(clients[0]?.company || "ABC Restaurant");
-    setEditorDueDate(new Date(Date.now() + 14*24*60*60*1000).toISOString().split("T")[0]); // 14 days out
+    setEditorDueDate(new Date(Date.now() + 14*24*60*60*1000).toISOString().split("T")[0]);
     setEditorDiscount(0);
     setEditorTaxRate(18);
     setEditorNotes("Payment terms: 14 days net. Bank transfers preferred.");
@@ -125,7 +125,7 @@ const InvoicesTab = ({
     setCurrentSubTab("editor");
   };
 
-  // Add Item inside Editor
+
   const handleEditorAddItem = (e) => {
     e.preventDefault();
     if (!newItemDesc.trim() || newItemQty <= 0 || newItemPrice < 0) return;
@@ -135,12 +135,12 @@ const InvoicesTab = ({
     setNewItemPrice(0);
   };
 
-  // Delete Item inside Editor
+
   const handleEditorDeleteItem = (idx) => {
     setEditorItems(editorItems.filter((_, i) => i !== idx));
   };
 
-  // Save/Submit Form inside Editor
+
   const handleSaveEditor = (e, targetStatus = "draft") => {
     e.preventDefault();
     if (!editorItems.length) {
@@ -162,12 +162,12 @@ const InvoicesTab = ({
     };
 
     if (editingInvoiceId) {
-      // Update existing
+
       setInvoices(invoices.map(i => i.id === editingInvoiceId ? savedInvoice : i));
       showToast(`Invoice Draft ${editorInvNumber} saved successfully.`, "success");
     } else {
-      // Create new
-      // Check duplicate ID
+
+
       if (invoices.some(i => i.id === editorInvNumber)) {
         showToast(`Invoice number ${editorInvNumber} already exists. Incrementing ID.`, "warning");
         savedInvoice.id = `INV-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -180,7 +180,7 @@ const InvoicesTab = ({
     setEditingInvoiceId(null);
   };
 
-  // 3. PREMIUM PDF EXPORT UTILITY
+
   const handleCustomGeneratePDF = (inv) => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -190,7 +190,7 @@ const InvoicesTab = ({
 
     const matchedClient = clients.find(c => c.company === inv.client);
     
-    // Recalculate values securely
+
     const subtotal = inv.items?.reduce((acc, it) => acc + (it.qty * it.price), 0) || inv.amount;
     const discPct = inv.discount || 0;
     const discountVal = Math.round(subtotal * (discPct / 100));
@@ -312,7 +312,6 @@ const InvoicesTab = ({
     showToast(`PDF generated for ${inv.id}`, "success");
   };
 
-  // 4. SEARCH & FILTER LOGIC
   const filteredInvoices = useMemo(() => {
     return invoices.filter(inv => {
       const matchesSearch = 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 const AuthContext = createContext(null);
@@ -12,6 +12,53 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
+  const refreshPromiseRef = useRef(null);
+
+  const clearSession = () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem("bn_refresh_token");
+    localStorage.removeItem("bn_access_token");
+    localStorage.removeItem("bn_user");
+    localStorage.removeItem("bn_workspaces");
+  };
+
+  const saveSessionTokens = (accessToken, refreshToken) => {
+    setToken(accessToken);
+    localStorage.setItem("bn_access_token", accessToken);
+    if (refreshToken) {
+      localStorage.setItem("bn_refresh_token", refreshToken);
+    }
+  };
+
+  const refreshSession = async () => {
+    if (!refreshPromiseRef.current) {
+      const savedRefreshToken = localStorage.getItem("bn_refresh_token");
+
+      if (!savedRefreshToken) {
+        return Promise.reject(new Error("Refresh token is missing"));
+      }
+
+      refreshPromiseRef.current = axios
+        .post("/auth/refresh", { refreshToken: savedRefreshToken }, { skipAuthRefresh: true })
+        .then((res) => {
+          if (!res.data.success) {
+            throw new Error(res.data.message || "Refresh failed");
+          }
+          saveSessionTokens(res.data.token, res.data.refreshToken);
+          return res.data.token;
+        })
+        .catch((error) => {
+          clearSession();
+          throw error;
+        })
+        .finally(() => {
+          refreshPromiseRef.current = null;
+        });
+    }
+
+    return refreshPromiseRef.current;
+  };
 
   const showToast = (message, type = "info") => {
     const id = Date.now() + Math.random().toString(36).substr(2, 9);
@@ -42,7 +89,7 @@ export const AuthProvider = ({ children }) => {
           }).join(''));
 
           const { exp } = JSON.parse(jsonPayload);
-          return Date.now() >= (exp * 1000) - 10000; // 10s buffer
+          return Date.now() >= (exp * 1000) - 10000;
         } catch (e) {
           return true;
         }
@@ -56,26 +103,16 @@ export const AuthProvider = ({ children }) => {
           }
 
           if (!savedAccessToken || isTokenExpired(savedAccessToken)) {
-            const res = await axios.post("/auth/refresh", {
-              refreshToken: savedRefreshToken
-            });
-
-            if (res.data.success) {
-              setToken(res.data.token);
-              localStorage.setItem("bn_access_token", res.data.token);
-              if (res.data.refreshToken) {
-                localStorage.setItem("bn_refresh_token", res.data.refreshToken);
-              }
-            }
+            await refreshSession();
           }
         } catch (error) {
           if (error.response && (error.response.status === 401 || error.response.status === 403)) {
             console.warn("Session expired on startup. Logging out silently.");
-            logout(true);
+            await logout(true);
           } else {
             console.error("Silent refresh failed on startup:", error);
             if (!savedAccessToken) {
-              logout(true);
+              await logout(true);
             }
           }
         }
@@ -90,9 +127,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const requestInterceptor = axios.interceptors.request.use(
       (config) => {
-        // Prefer in-memory state token; fall back to localStorage so that
-        // authenticated calls on the Welcome page work even before React
-        // state has fully hydrated (fixes /auth/join-requests 400 errors).
+
+
+
         const activeToken = token || localStorage.getItem("bn_access_token");
         if (activeToken) {
           config.headers.Authorization = `Bearer ${activeToken}`;
@@ -118,32 +155,20 @@ export const AuthProvider = ({ children }) => {
         if (
           error.response &&
           error.response.status === 401 &&
-          !originalRequest._retry
+          !originalRequest._retry &&
+          !originalRequest.skipAuthRefresh &&
+          !originalRequest.url?.includes("/auth/refresh") &&
+          !originalRequest.url?.includes("/auth/logout")
         ) {
           originalRequest._retry = true;
-          const savedRefreshToken = localStorage.getItem("bn_refresh_token");
 
-          if (savedRefreshToken) {
-            try {
-              const res = await axios.post("/auth/refresh", {
-                refreshToken: savedRefreshToken
-              });
-
-              if (res.data.success) {
-                setToken(res.data.token);
-                localStorage.setItem("bn_access_token", res.data.token);
-                if (res.data.refreshToken) {
-                  localStorage.setItem("bn_refresh_token", res.data.refreshToken);
-                }
-
-
-                originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
-                return axios(originalRequest);
-              }
-            } catch (refreshError) {
-              console.error("Auto refresh interceptor failed:", refreshError);
-              logout();
-            }
+          try {
+            const newAccessToken = await refreshSession();
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return axios(originalRequest);
+          } catch (refreshError) {
+            console.error("Auto refresh interceptor failed:", refreshError);
+            await logout(true);
           }
         }
         return Promise.reject(error);
@@ -171,10 +196,8 @@ export const AuthProvider = ({ children }) => {
 
       if (res.data.success) {
         const { token: newAccessToken, refreshToken: newRefreshToken, user: userData } = res.data;
-        setToken(newAccessToken);
+        saveSessionTokens(newAccessToken, newRefreshToken);
         setUser(userData);
-        localStorage.setItem("bn_refresh_token", newRefreshToken);
-        localStorage.setItem("bn_access_token", newAccessToken);
         localStorage.setItem("bn_user", JSON.stringify(userData));
         showToast("Welcome to BillNest! Your account is created successfully.", "success");
         return { success: true, user: userData };
@@ -192,7 +215,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (identifier, password) => {
     try {
       setIsLoading(true);
-      // Determine if identifier is email or username
+
       const payload = {
         email: identifier.includes("@") ? identifier : undefined,
         username: !identifier.includes("@") ? identifier : undefined,
@@ -203,10 +226,8 @@ export const AuthProvider = ({ children }) => {
 
       if (res.data.success) {
         const { token: newAccessToken, refreshToken: newRefreshToken, user: userData } = res.data;
-        setToken(newAccessToken);
+        saveSessionTokens(newAccessToken, newRefreshToken);
         setUser(userData);
-        localStorage.setItem("bn_refresh_token", newRefreshToken);
-        localStorage.setItem("bn_access_token", newAccessToken);
         localStorage.setItem("bn_user", JSON.stringify(userData));
         showToast(`Welcome back, ${userData.name}!`, "info");
         return { success: true, user: userData };
@@ -226,10 +247,8 @@ export const AuthProvider = ({ children }) => {
       const res = await axios.post("/auth/organization/create", details);
       if (res.data.success) {
         const { token: newAccessToken, refreshToken: newRefreshToken, user: userData } = res.data;
-        setToken(newAccessToken);
+        saveSessionTokens(newAccessToken, newRefreshToken);
         setUser(userData);
-        localStorage.setItem("bn_refresh_token", newRefreshToken);
-        localStorage.setItem("bn_access_token", newAccessToken);
         localStorage.setItem("bn_user", JSON.stringify(userData));
         showToast("Workspace Organization created successfully!", "success");
         return { success: true, user: userData };
@@ -329,10 +348,8 @@ export const AuthProvider = ({ children }) => {
 
       if (res.data.success) {
         const { token: newAccessToken, refreshToken: newRefreshToken, user: userData } = res.data;
-        setToken(newAccessToken);
+        saveSessionTokens(newAccessToken, newRefreshToken);
         setUser(userData);
-        localStorage.setItem("bn_refresh_token", newRefreshToken);
-        localStorage.setItem("bn_access_token", newAccessToken);
         localStorage.setItem("bn_user", JSON.stringify(userData));
         showToast("Invitation accepted! Account activated.", "success");
         return { success: true };
@@ -351,19 +368,13 @@ export const AuthProvider = ({ children }) => {
     const savedRefreshToken = localStorage.getItem("bn_refresh_token");
     if (savedRefreshToken && !isSilent) {
       try {
-        await axios.post("/auth/logout", { refreshToken: savedRefreshToken });
+        await axios.post("/auth/logout", { refreshToken: savedRefreshToken }, { skipAuthRefresh: true });
       } catch (error) {
         console.error("Server logout error:", error);
       }
     }
 
-
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("bn_refresh_token");
-    localStorage.removeItem("bn_access_token");
-    localStorage.removeItem("bn_user");
-    localStorage.removeItem("bn_workspaces");
+    clearSession();
     if (!isSilent) {
       showToast("Logged out successfully.", "info");
     }
@@ -461,16 +472,14 @@ export const AuthProvider = ({ children }) => {
         const res = await axios.put("/auth/update-role", { role: targetInvite.role });
         if (res.data.success) {
           const { user: updatedUser, token: newAccessToken, refreshToken: newRefreshToken } = res.data;
-          setToken(newAccessToken);
+          saveSessionTokens(newAccessToken, newRefreshToken);
           setUser(updatedUser);
-          localStorage.setItem("bn_access_token", newAccessToken);
-          localStorage.setItem("bn_refresh_token", newRefreshToken);
           localStorage.setItem("bn_user", JSON.stringify(updatedUser));
           showToast(`Invitation accepted! You are now an ${targetInvite.role.toUpperCase()} of ${targetInvite.orgName}.`, "success");
         }
       } catch (err) {
         console.error("Failed to persist role in backend database:", err);
-        // Fallback to local update if API fails
+
         const updatedUser = {
           ...user,
           role: targetInvite.role,

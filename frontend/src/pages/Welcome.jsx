@@ -7,13 +7,13 @@ const Welcome = () => {
   const { user, createOrganization, showToast, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Onboarding Phase: 'choose', 'create', 'join', 'pending'
+
   const [phase, setPhase] = useState("choose");
   const [loading, setLoading] = useState(false);
   const [myRequests, setMyRequests] = useState([]);
   const [activePendingRequest, setActivePendingRequest] = useState(null);
 
-  // Form states - Create Organization
+
   const [orgForm, setOrgForm] = useState({
     name: "",
     industry: "Technology",
@@ -23,14 +23,14 @@ const Welcome = () => {
     timezone: "Asia/Kolkata"
   });
 
-  // Form states - Join Organization
+
   const [joinForm, setJoinForm] = useState({
     accessCode: "",
     role: "member",
     message: ""
   });
 
-  // Fetch candidate's requests on mount to check if they have a pending one
+
   const fetchMyRequests = async () => {
     try {
       setLoading(true);
@@ -43,12 +43,12 @@ const Welcome = () => {
           setPhase("pending");
         } else {
           setActivePendingRequest(null);
-          // If a request was recently approved, the user might already have an organization assigned in the DB!
-          // Let's trigger a profile check
+
+
           if (res.data.requests.some(r => r.status === "approved")) {
-            // Silently check if user now has an organization
-            const profileRes = await axios.get("/auth/team/members"); // simple test or check
-            // We can just advise user to reload or we refresh token
+
+            const profileRes = await axios.get("/auth/team/members");
+
             handleManualRefresh();
           }
         }
@@ -66,12 +66,12 @@ const Welcome = () => {
     }
   }, [user]);
 
-  // Handle Manual Status Refresh
+
   const handleManualRefresh = async () => {
     try {
       setLoading(true);
       showToast("Syncing workspace authorization...", "info");
-      // Perform token refresh rotation to retrieve the new JWT access token with the organization context populated!
+
       const savedRefreshToken = localStorage.getItem("bn_refresh_token");
       if (savedRefreshToken) {
         const res = await axios.post("/auth/refresh", { refreshToken: savedRefreshToken });
@@ -80,14 +80,14 @@ const Welcome = () => {
           if (res.data.refreshToken) {
             localStorage.setItem("bn_refresh_token", res.data.refreshToken);
           }
-          // Fetch fresh user profile details
-          // Reloading the page or state sync
+
+
           window.location.reload();
           return;
         }
       }
       
-      // Fallback request check
+
       const reqRes = await axios.get("/auth/join-requests/my");
       if (reqRes.data.success) {
         setMyRequests(reqRes.data.requests);
@@ -99,7 +99,7 @@ const Welcome = () => {
           const approved = reqRes.data.requests.find(r => r.status === "approved");
           if (approved) {
             showToast("Congratulations! Your request was approved. Fetching workspace details...", "success");
-            // If approved, trigger token rotation
+
             window.location.reload();
           } else {
             showToast("No active pending request found.", "info");
@@ -114,7 +114,7 @@ const Welcome = () => {
     }
   };
 
-  // Handle Request Cancellation
+
   const handleCancelRequest = async (requestId) => {
     if (!window.confirm("Are you sure you want to cancel this access request?")) return;
     try {
@@ -133,7 +133,7 @@ const Welcome = () => {
     }
   };
 
-  // Form Submit - Create Org
+
   const handleCreateOrgSubmit = async (e) => {
     e.preventDefault();
     if (!orgForm.name.trim()) {
@@ -146,7 +146,7 @@ const Welcome = () => {
       const res = await createOrganization(orgForm);
       if (res.success) {
         showToast(`Workspace '${orgForm.name}' created! Redirecting...`, "success");
-        // Redirect to dashboard
+
         setTimeout(() => {
           window.location.href = "/dashboard";
         }, 1000);
@@ -158,7 +158,7 @@ const Welcome = () => {
     }
   };
 
-  // Form Submit - Join Org
+
   const handleJoinOrgSubmit = async (e) => {
     e.preventDefault();
     if (!joinForm.accessCode.trim()) {
@@ -176,7 +176,7 @@ const Welcome = () => {
 
       if (res.data.success) {
         showToast("Access request submitted successfully!", "success");
-        fetchMyRequests(); // this will auto-switch phase to 'pending'
+        fetchMyRequests();
       }
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to submit access request. Check access code.", "error");

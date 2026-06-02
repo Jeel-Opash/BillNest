@@ -8,7 +8,6 @@ export default {
         heading: ["Outfit", "Inter", "sans-serif"],
       },
       colors: {
-        // Material Design 3 inspired semantic tokens mapped to indigo palette
         primary: "#4f46e5",
         "on-primary": "#ffffff",
         "primary-fixed": "#e0e7ff",

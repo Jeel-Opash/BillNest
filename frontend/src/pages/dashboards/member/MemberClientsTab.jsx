@@ -9,7 +9,7 @@ const MemberClientsTab = ({
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState(null);
 
-  // Form parameters
+
   const [editingId, setEditingId] = useState(null);
   const [formName, setFormName] = useState("");
   const [formCompany, setFormCompany] = useState("");

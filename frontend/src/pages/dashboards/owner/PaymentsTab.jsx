@@ -16,12 +16,12 @@ const PaymentsTab = ({
   setInvoices,
   showToast
 }) => {
-  const [activeSegment, setActiveSegment] = useState("all"); // all, succeeded, failed, refunded, stripe
+  const [activeSegment, setActiveSegment] = useState("all");
   const [selectedStripeLog, setSelectedStripeLog] = useState(null);
   const [refundTarget, setRefundTarget] = useState(null);
   const [refundReason, setRefundReason] = useState("Duplicate charge");
 
-  // Simulated Stripe Event Logs for the Stripe Transactions Sub-tab
+
   const [stripeLogs] = useState([
     {
       id: "evt_3N5b9eLkdIwEfV1a2jK0x9pQ",
@@ -32,7 +32,7 @@ const PaymentsTab = ({
       data: {
         object: {
           id: "pi_3N5b9eLkdIwEfV1a",
-          amount: 1500000, // in cents
+          amount: 1500000,
           currency: "inr",
           payment_method_types: ["card"],
           status: "succeeded",
@@ -70,37 +70,37 @@ const PaymentsTab = ({
     }
   ]);
 
-  // --- Metrics Calculations ---
+
   
-  // Total Collected (Sum of succeeded payments, excluding any that were refunded)
+
   const totalCollected = useMemo(() => {
     return payments
       .filter(p => p.status?.toLowerCase() === "succeeded")
       .reduce((sum, p) => sum + Number(p.amount), 0);
   }, [payments]);
 
-  // Pending Payments (Sum of invoices that are sent or overdue)
+
   const pendingPayments = useMemo(() => {
     return invoices
       .filter(inv => inv.status?.toLowerCase() === "sent" || inv.status?.toLowerCase() === "overdue")
       .reduce((sum, inv) => sum + Number(inv.amount), 0);
   }, [invoices]);
 
-  // Failed Payments (Sum of all failed payments)
+
   const failedPaymentsSum = useMemo(() => {
     return payments
       .filter(p => p.status?.toLowerCase() === "failed")
       .reduce((sum, p) => sum + Number(p.amount), 0);
   }, [payments]);
 
-  // Refunded Amount (Sum of all payments with status refunded)
+
   const refundedAmount = useMemo(() => {
     return payments
       .filter(p => p.status?.toLowerCase() === "refunded")
       .reduce((sum, p) => sum + Number(p.amount), 0);
   }, [payments]);
 
-  // --- Filtering ---
+
   const filteredPayments = useMemo(() => {
     return payments.filter(p => {
       if (activeSegment === "all") return true;
@@ -108,12 +108,12 @@ const PaymentsTab = ({
     });
   }, [payments, activeSegment]);
 
-  // --- Refund Handler ---
+
   const handleProcessRefundSubmit = (e) => {
     e.preventDefault();
     if (!refundTarget) return;
 
-    // 1. Update the payment record to "refunded"
+
     setPayments(payments.map(p => {
       if (p.id === refundTarget.id) {
         return { ...p, status: "refunded", refundReason: refundReason };
@@ -121,7 +121,7 @@ const PaymentsTab = ({
       return p;
     }));
 
-    // 2. Mark the corresponding invoice as "void" or keep as "refunded"
+
     if (setInvoices && refundTarget.invoice) {
       setInvoices(invoices.map(inv => {
         if (inv.id === refundTarget.invoice) {
@@ -306,7 +306,6 @@ const PaymentsTab = ({
             </table>
           </div>
         ) : (
-          // Segment 2: Raw Stripe Webhook Logs
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-[10px] text-indigo-700 font-bold bg-indigo-50 border border-indigo-100/50 p-3 rounded-2xl">
               <span className="material-symbols-outlined text-[16px] animate-pulse">settings_ethernet</span>

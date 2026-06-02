@@ -20,7 +20,7 @@ const OwnerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Helper to extract activePage from current path route (e.g. /dashboard/clients -> clients)
+
   const getActivePageFromPath = () => {
     const parts = location.pathname.split("/");
     return parts[2] || "dashboard";
@@ -68,7 +68,7 @@ const OwnerDashboard = () => {
     }
     const totalRevenue = invoices.reduce((sum, inv) => sum + inv.amount, 0);
     const paidRevenue = invoices.filter(i => i.status === "paid").reduce((sum, inv) => sum + inv.amount, 0);
-    const taxPaid = paidRevenue * 0.18; // 18% tax simulation
+    const taxPaid = paidRevenue * 0.18;
 
     printWindow.document.write(`
       <html>
@@ -1092,7 +1092,6 @@ const OwnerDashboard = () => {
                         ];
                         const randomColor = colors[index % colors.length];
 
-                        // Monospace pill colors based on action type
                         let actionClass = "bg-slate-100 text-slate-700 border-slate-200/50";
                         if (log.action === "CLIENT_CREATED") actionClass = "bg-slate-100 text-slate-700 border border-slate-200/50";
                         else if (log.action === "INVOICE_GENERATED") actionClass = "bg-amber-50 text-amber-800 border border-amber-200/60";
@@ -1525,5 +1524,3 @@ const OwnerDashboard = () => {
 };
 
 export default OwnerDashboard;
-
-

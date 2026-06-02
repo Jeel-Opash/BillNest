@@ -100,8 +100,8 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Compute errors synchronously — React setState is async so `errors` state
-    // is always stale when read immediately after calling validateField().
+
+
     const syncErrors = {};
     const getErr = (name, value) => {
       if (name === "fullName") {
@@ -130,7 +130,7 @@ const Register = () => {
       return "";
     };
 
-    // Mark all touched and collect errors
+
     const allTouched = {};
     Object.keys(formData).forEach(k => {
       allTouched[k] = true;

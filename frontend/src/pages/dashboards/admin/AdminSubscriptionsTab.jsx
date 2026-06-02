@@ -4,20 +4,20 @@ const AdminSubscriptionsTab = ({
   clients,
   showToast
 }) => {
-  // Mock plans list
+
   const plans = [
     { name: "Starter Tier", price: 2900, cycle: "monthly", features: ["Up to 10 clients", "Basic invoicing", "Email support"] },
     { name: "Growth Plan", price: 9900, cycle: "monthly", features: ["Unlimited clients", "Recurrence engine", "Stripe portal"] },
     { name: "Enterprise Suite", price: 29000, cycle: "yearly", features: ["Dedicated servers", "API endpoints", "SLA guarantees"] }
   ];
 
-  // Current client subscriptions state
+
   const [subscriptions, setSubscriptions] = useState([
     { id: "sub_1", client: "ABC Restaurant", plan: "Growth Plan", price: 9900, cycle: "monthly", renewalDate: "2026-07-02", status: "active" },
     { id: "sub_2", client: "Pixel Studio", plan: "Starter Tier", price: 2900, cycle: "monthly", renewalDate: "2026-06-25", status: "paused" }
   ]);
 
-  // Form inputs
+
   const [targetClient, setTargetClient] = useState(clients[0]?.company || "");
   const [selectedPlan, setSelectedPlan] = useState(plans[0]);
   const [customRenewal, setCustomRenewal] = useState(new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]);
@@ -29,7 +29,7 @@ const AdminSubscriptionsTab = ({
       return;
     }
 
-    // Check if client already has subscription
+
     if (subscriptions.some(s => s.client === targetClient && s.status !== "cancelled")) {
       showToast(`Client ${targetClient} already has an active subscription plan.`, "warning");
       return;

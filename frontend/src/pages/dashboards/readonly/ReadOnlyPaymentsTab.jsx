@@ -17,7 +17,7 @@ const ReadOnlyPaymentsTab = () => {
     return p.status === activeTab;
   });
 
-  // Analytics derivations
+
   const totalPayments = payments.length;
   const revenueCollected = payments.filter(p => p.status === "successful").reduce((acc, curr) => acc + curr.amount, 0);
   const failedTransactions = payments.filter(p => p.status === "failed").length;

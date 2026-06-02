@@ -10,7 +10,7 @@ const AdminClientsTab = ({
   const [showArchived, setShowArchived] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
 
-  // Form states
+
   const [editingId, setEditingId] = useState(null);
   const [formName, setFormName] = useState("");
   const [formCompany, setFormCompany] = useState("");
@@ -89,7 +89,7 @@ const AdminClientsTab = ({
     showToast(`Client "${company}" status modified.`, "info");
   };
 
-  // Filter clients
+
   const filtered = clients.filter(c => {
     const matchesSearch =
       c.company.toLowerCase().includes(search.toLowerCase()) ||

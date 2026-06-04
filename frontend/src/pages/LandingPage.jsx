@@ -10,12 +10,6 @@ const features = [
   { icon: "payments", title: "Stripe Integration", desc: "Accept payments via Stripe in test mode. Idempotent webhook handling for payment events." },
 ];
 
-const plans = [
-  { name: "Free", price: "₹0", period: "/mo", features: ["1 Organization", "5 Clients", "10 Invoices/mo", "Basic Reports", "Email Support"], cta: "Get Started", highlight: false },
-  { name: "Starter", price: "₹999", period: "/mo", features: ["1 Organization", "50 Clients", "Unlimited Invoices", "Subscription Plans", "Stripe Payments", "Priority Support"], cta: "Start Free Trial", highlight: true },
-  { name: "Pro", price: "₹2,999", period: "/mo", features: ["Unlimited Orgs", "Unlimited Clients", "Advanced Analytics", "API Access", "Custom Branding", "Dedicated Support"], cta: "Contact Sales", highlight: false },
-];
-
 const stats = [
   { value: "10,000+", label: "Invoices Generated" },
   { value: "500+", label: "Organizations" },
@@ -42,7 +36,6 @@ const LandingPage = () => {
 
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#features" className="hover:text-indigo-600 transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-indigo-600 transition-colors">Pricing</a>
             <a href="#stats" className="hover:text-indigo-600 transition-colors">About</a>
           </div>
 
@@ -66,7 +59,6 @@ const LandingPage = () => {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 flex flex-col gap-4">
             <a href="#features" className="text-sm font-semibold text-slate-600 hover:text-indigo-600" onClick={() => setMobileMenuOpen(false)}>Features</a>
-            <a href="#pricing" className="text-sm font-semibold text-slate-600 hover:text-indigo-600" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
             <Link to="/login" className="text-sm font-bold text-slate-600">Sign In</Link>
             <Link to="/register" className="bg-indigo-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl text-center">Get Started Free</Link>
           </div>
@@ -234,45 +226,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-24 px-6 bg-slate-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-extrabold text-slate-900 mb-4">Simple, transparent pricing</h2>
-            <p className="text-slate-500 text-lg">Start free, scale as you grow. No hidden fees.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {plans.map((plan, i) => (
-              <div key={i} className={`rounded-2xl border p-8 flex flex-col gap-6 transition-all ${plan.highlight ? "bg-indigo-600 border-indigo-600 shadow-xl shadow-indigo-200 scale-[1.02]" : "bg-white border-slate-200 shadow-sm"}`}>
-                <div>
-                  <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${plan.highlight ? "text-indigo-200" : "text-slate-400"}`}>{plan.name}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className={`text-4xl font-extrabold ${plan.highlight ? "text-white" : "text-slate-900"}`}>{plan.price}</span>
-                    <span className={`text-sm font-semibold ${plan.highlight ? "text-indigo-200" : "text-slate-400"}`}>{plan.period}</span>
-                  </div>
-                </div>
-
-                <ul className="flex flex-col gap-3 flex-1">
-                  {plan.features.map((f, j) => (
-                    <li key={j} className={`flex items-center gap-2.5 text-sm font-semibold ${plan.highlight ? "text-indigo-100" : "text-slate-600"}`}>
-                      <span className={`material-symbols-outlined text-[16px] ${plan.highlight ? "text-indigo-300" : "text-emerald-500"}`}>check_circle</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  to="/register"
-                  className={`w-full py-3 rounded-xl font-bold text-sm text-center transition-all ${plan.highlight ? "bg-white text-indigo-600 hover:bg-indigo-50" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
-                >
-                  {plan.cta}
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="py-24 px-6 bg-indigo-600">

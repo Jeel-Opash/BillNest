@@ -1,6 +1,21 @@
-import React, { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import axios from "axios";
+
+const ROLE_LABELS = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+  read_only: "Read Only",
+  "read-only": "Read Only"
+};
+
+const normalizeRole = (role = "") => (role === "read-only" ? "read_only" : role);
+
+const csvEscape = (value) => {
+  const safeValue = value ?? "";
+  return `"${String(safeValue).replace(/"/g, '""')}"`;
+};
 
 const TeamTab = ({ teamList, setTeamList, showToast }) => {
   const { user } = useAuth();
@@ -9,6 +24,12 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
   const [activeSubTab, setActiveSubTab] = useState("members");
   const [accessCode, setAccessCode] = useState("Loading...");
   const [isRegeneratingCode, setIsRegeneratingCode] = useState(false);
+  const [isRefreshingTeam, setIsRefreshingTeam] = useState(false);
+  const [rosterSearch, setRosterSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortMode, setSortMode] = useState("role");
+  const [removingMemberId, setRemovingMemberId] = useState(null);
 
 
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -21,10 +42,71 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
   const [assignRole, setAssignRole] = useState("member");
   const [responseNotes, setResponseNotes] = useState("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [selectedRequestIds, setSelectedRequestIds] = useState([]);
+  const [bulkActionType, setBulkActionType] = useState("approve");
+  const [bulkAssignRole, setBulkAssignRole] = useState("member");
+  const [bulkNotes, setBulkNotes] = useState("");
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
+
+  const teamInsights = useMemo(() => {
+    const roleCounts = teamList.reduce(
+      (counts, teammate) => {
+        const role = normalizeRole(teammate.role);
+        counts[role] = (counts[role] || 0) + 1;
+        return counts;
+      },
+      { owner: 0, admin: 0, member: 0, read_only: 0 }
+    );
+
+    return {
+      roleCounts,
+      activeCount: teamList.filter((teammate) => teammate.status !== "inactive").length,
+      readOnlyCount: roleCounts.read_only || 0
+    };
+  }, [teamList]);
+
+  const filteredTeamList = useMemo(() => {
+    const query = rosterSearch.trim().toLowerCase();
+    const rolePriority = { owner: 0, admin: 1, member: 2, read_only: 3 };
+
+    return teamList
+      .filter((teammate) => {
+        const role = normalizeRole(teammate.role);
+        const status = teammate.status || "active";
+        const matchesQuery =
+          !query ||
+          teammate.name?.toLowerCase().includes(query) ||
+          teammate.email?.toLowerCase().includes(query);
+        const matchesRole = roleFilter === "all" || role === roleFilter;
+        const matchesStatus = statusFilter === "all" || status === statusFilter;
+
+        return matchesQuery && matchesRole && matchesStatus;
+      })
+      .sort((first, second) => {
+        if (sortMode === "name") {
+          return first.name.localeCompare(second.name);
+        }
+
+        if (sortMode === "lastLogin") {
+          const firstTime = Date.parse(first.lastLogin) || 0;
+          const secondTime = Date.parse(second.lastLogin) || 0;
+          return secondTime - firstTime;
+        }
+
+        return (rolePriority[normalizeRole(first.role)] ?? 9) - (rolePriority[normalizeRole(second.role)] ?? 9);
+      });
+  }, [roleFilter, rosterSearch, sortMode, statusFilter, teamList]);
+
+  const selectedPendingRequests = useMemo(
+    () => pendingRequests.filter((request) => selectedRequestIds.includes(request._id)),
+    [pendingRequests, selectedRequestIds]
+  );
+
+  const allPendingSelected = pendingRequests.length > 0 && selectedRequestIds.length === pendingRequests.length;
 
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
@@ -98,16 +180,80 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     }
   };
 
+  const handleRefreshTeam = async () => {
+    setIsRefreshingTeam(true);
+    try {
+      await Promise.all([fetchTeammates(), fetchAccessCode(), fetchRequestsData()]);
+      showToast("Team workspace data refreshed.", "success");
+    } catch {
+      showToast("Failed to refresh team workspace data.", "error");
+    } finally {
+      setIsRefreshingTeam(false);
+    }
+  };
+
   useEffect(() => {
     fetchTeammates();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAccessCode();
     fetchRequestsData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(accessCode);
     showToast("Access code copied to clipboard!", "success");
+  };
+
+  const downloadCsv = (fileName, rows) => {
+    const csvContent = rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportRoster = () => {
+    const rows = [
+      ["Name", "Email", "Role", "Status", "Last Login"],
+      ...filteredTeamList.map((teammate) => [
+        teammate.name,
+        teammate.email,
+        ROLE_LABELS[normalizeRole(teammate.role)] || teammate.role,
+        teammate.status || "active",
+        teammate.lastLogin
+      ])
+    ];
+
+    downloadCsv(`billnest-team-roster-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    showToast("Filtered roster exported as CSV.", "success");
+  };
+
+  const handleExportRequestHistory = () => {
+    const rows = [
+      ["Candidate", "Email", "Final Role", "Status", "Processed By", "Notes", "Processed Date"],
+      ...requestHistory.map((request) => {
+        const actDetails = request.approvalHistory?.[0] || {};
+        return [
+          request.user?.name || "User",
+          request.user?.email || "",
+          ROLE_LABELS[normalizeRole(request.role)] || request.role || "-",
+          request.status,
+          actDetails.actedBy?.name || "Admin",
+          actDetails.notes || "",
+          request.updatedAt ? new Date(request.updatedAt).toLocaleDateString() : "-"
+        ];
+      })
+    ];
+
+    downloadCsv(`billnest-request-ledger-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    showToast("Request ledger exported as CSV.", "success");
   };
 
 
@@ -132,13 +278,19 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
 
   const handleDeleteTeammate = async (id, name) => {
     if (!window.confirm(`Are you sure you want to remove ${name} from this workspace?`)) return;
+    setRemovingMemberId(id);
     try {
-
-
+      const res = await axios.delete(`/settings/team/${id}`);
+      if (!res.data.success) {
+        throw new Error(res.data.message || "Failed to remove teammate.");
+      }
       setTeamList(teamList.filter(t => t.id !== id));
-      showToast(`Teammate ${name} removed from workspace.`, "info");
+      showToast(`Teammate ${name} removed from workspace.`, "success");
     } catch (err) {
-      showToast("Failed to remove teammate.", "error");
+      console.error("Failed to remove teammate:", err);
+      showToast(err.response?.data?.message || err.message || "Failed to remove teammate.", "error");
+    } finally {
+      setRemovingMemberId(null);
     }
   };
 
@@ -214,6 +366,27 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
           <p className="text-slate-500 text-sm mt-1">
             Generate access codes, manage active teammates, and approve or reject join requests in real time.
           </p>
+          
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleRefreshTeam}
+            disabled={isRefreshingTeam}
+            className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold shadow-sm disabled:opacity-60 transition-all"
+          >
+            <span className={`material-symbols-outlined text-[16px] ${isRefreshingTeam ? "animate-spin" : ""}`}>sync</span>
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={handleExportRoster}
+            disabled={teamList.length === 0}
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 transition-all"
+          >
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            Export Roster
+          </button>
         </div>
       </div>
 
@@ -229,7 +402,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
               <span className="text-xs text-slate-400">members</span>
             </div>
             <div className="mt-2 text-[10px] text-indigo-600 font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Fully Scoped RBAC
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> {teamInsights.activeCount} Active Accounts
             </div>
           </div>
 
@@ -251,12 +424,11 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
               <span className="text-xs text-slate-400 font-semibold text-slate-500">completed</span>
             </div>
             <div className="mt-2 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-              <span className="material-symbols-outlined text-[12px]">check_circle</span> Audit History Locked
+              <span className="material-symbols-outlined text-[12px]">visibility</span> {teamInsights.readOnlyCount} Read-Only Seats
             </div>
           </div>
         </div>
 
-        {/* Access Code Settings Generator */}
         <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-4">
           <div>
             <h4 className="font-heading text-base font-extrabold text-slate-950 flex items-center gap-1.5">
@@ -294,10 +466,8 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
 
       </div>
 
-      {/* Main Connection Workspace Tabs */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col">
         
-        {/* Navigation bar */}
         <div className="flex border-b border-slate-50 p-2.5 bg-slate-50/50">
           {[
             { id: "members", label: "Active Teammates", symbol: "group" },
@@ -319,26 +489,102 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
           ))}
         </div>
 
-        {/* Tab body */}
         <div className="p-6">
           
-          {/* ACTIVE TEAMMATES */}
           {activeSubTab === "members" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
-              {/* Teammates List */}
               <div className="lg:col-span-8 space-y-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-heading text-sm font-bold text-slate-800">Workspace Active Roster</h4>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Scope: {user?.organization?.name}</span>
+                <div className="flex flex-col gap-3 mb-2">
+                  <div className="flex justify-between items-center gap-3">
+                    <h4 className="font-heading text-sm font-bold text-slate-800">Workspace Active Roster</h4>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Scope: {user?.organization?.name}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                    <div className="md:col-span-5 relative">
+                      <span className="material-symbols-outlined text-[17px] text-slate-400 absolute left-3 top-1/2 -translate-y-1/2">search</span>
+                      <input
+                        type="search"
+                        value={rosterSearch}
+                        onChange={(e) => setRosterSearch(e.target.value)}
+                        placeholder="Search teammate or email"
+                        className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 pl-9 pr-3 text-xs font-semibold outline-none transition-all"
+                      />
+                    </div>
+
+                    <select
+                      value={roleFilter}
+                      onChange={(e) => setRoleFilter(e.target.value)}
+                      className="md:col-span-2 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
+                    >
+                      <option value="all">All Roles</option>
+                      <option value="owner">Owner</option>
+                      <option value="admin">Admin</option>
+                      <option value="member">Member</option>
+                      <option value="read_only">Read Only</option>
+                    </select>
+
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="md:col-span-2 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="pending">Pending</option>
+                    </select>
+
+                    <select
+                      value={sortMode}
+                      onChange={(e) => setSortMode(e.target.value)}
+                      className="md:col-span-3 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
+                    >
+                      <option value="role">Sort by Privilege</option>
+                      <option value="name">Sort by Name</option>
+                      <option value="lastLogin">Sort by Recent Login</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      ["Owners", teamInsights.roleCounts.owner || 0, "text-indigo-700"],
+                      ["Admins", teamInsights.roleCounts.admin || 0, "text-amber-700"],
+                      ["Members", teamInsights.roleCounts.member || 0, "text-slate-700"],
+                      ["Read Only", teamInsights.roleCounts.read_only || 0, "text-teal-700"]
+                    ].map(([label, value, color]) => (
+                      <div key={label} className="bg-white border border-slate-100 rounded-xl px-3 py-2 shadow-sm">
+                        <span className="block text-[9px] text-slate-400 font-black uppercase tracking-wider">{label}</span>
+                        <span className={`text-sm font-black ${color}`}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {teamList.length === 0 ? (
                   <p className="text-xs text-slate-400 text-center py-6">No teammates registered in this workspace yet.</p>
+                ) : filteredTeamList.length === 0 ? (
+                  <div className="text-center py-8 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+                    <span className="material-symbols-outlined text-[34px] text-slate-300">person_search</span>
+                    <p className="text-xs text-slate-500 font-bold mt-1">No teammates match these filters.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRosterSearch("");
+                        setRoleFilter("all");
+                        setStatusFilter("all");
+                      }}
+                      className="mt-3 text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-wider"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {teamList.map(t => {
+                    {filteredTeamList.map(t => {
                       const initials = t.name.split(" ").map(w => w.charAt(0)).join("").substring(0, 2).toUpperCase();
+                      const isRemoving = removingMemberId === t.id;
                       return (
                         <div key={t.id} className="p-4 bg-slate-50/40 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-200/80 transition-all">
                           <div className="flex items-center gap-3">
@@ -379,19 +625,26 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
 
                             <div className="text-left sm:text-right">
                               <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">Status</span>
-                              <span className="inline-flex items-center gap-1 font-bold text-emerald-700 capitalize">
-                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                                Active
+                              <span className={`inline-flex items-center gap-1 font-bold capitalize ${
+                                t.status === "inactive" ? "text-slate-500" : t.status === "pending" ? "text-amber-700" : "text-emerald-700"
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  t.status === "inactive" ? "bg-slate-400" : t.status === "pending" ? "bg-amber-500" : "bg-emerald-500 animate-ping"
+                                }`}></span>
+                                {t.status || "active"}
                               </span>
                             </div>
 
                             {t.role !== "owner" && (
                               <button
                                 onClick={() => handleDeleteTeammate(t.id, t.name)}
-                                className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-auto sm:ml-0 cursor-pointer"
+                                disabled={isRemoving}
+                                className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-auto sm:ml-0 cursor-pointer disabled:opacity-50"
                                 title="Revoke Admission & Remove"
                               >
-                                <span className="material-symbols-outlined text-[20px]">person_remove</span>
+                                <span className={`material-symbols-outlined text-[20px] ${isRemoving ? "animate-spin" : ""}`}>
+                                  {isRemoving ? "progress_activity" : "person_remove"}
+                                </span>
                               </button>
                             )}
                           </div>
@@ -556,9 +809,20 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
           {/* REQUEST HISTORY LEDGER */}
           {activeSubTab === "history" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
                 <h4 className="font-heading text-sm font-bold text-slate-800">Immutable Request Ledger Logs</h4>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Compliant System Logs</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Compliant System Logs</span>
+                  <button
+                    type="button"
+                    onClick={handleExportRequestHistory}
+                    disabled={requestHistory.length === 0}
+                    className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm disabled:opacity-50 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">download</span>
+                    Export Ledger
+                  </button>
+                </div>
               </div>
 
               {isLoadingRequests ? (

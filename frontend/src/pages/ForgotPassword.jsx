@@ -1,6 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
+const getPasswordStrength = (pw) => {
+  if (!pw) return { score: 0, label: "", color: "" };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const labels = ["", "Weak", "Fair", "Good", "Strong", "Very Strong"];
+  const colors = ["", "bg-rose-500", "bg-amber-500", "bg-yellow-400", "bg-emerald-500", "bg-emerald-600"];
+  const textColors = ["", "text-rose-400", "text-amber-400", "text-yellow-400", "text-emerald-400", "text-emerald-400"];
+  return { score, label: labels[score] || "Very Strong", color: colors[score] || "bg-emerald-600", textColor: textColors[score] };
+};
 
 const ForgotPassword = () => {
   const { forgotPassword, resetPassword, showToast } = useAuth();
@@ -175,6 +189,19 @@ const ForgotPassword = () => {
                       <span className="material-symbols-outlined text-[16px]">{showPassword ? "visibility_off" : "visibility"}</span>
                     </button>
                   </div>
+                  {password && (() => {
+                    const str = getPasswordStrength(password);
+                    return (
+                      <div className="mt-2 flex flex-col gap-1">
+                        <div className="flex gap-1">
+                          {[1,2,3,4,5].map(s => (
+                            <div key={s} className={`h-1 flex-1 rounded-full transition-all duration-300 ${s <= str.score ? str.color : "bg-slate-800"}`} />
+                          ))}
+                        </div>
+                        <p className={`text-[10px] font-bold ${str.textColor}`}>{str.label} password</p>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>
@@ -185,11 +212,27 @@ const ForgotPassword = () => {
                       type={showPassword ? "text" : "password"}
                       required
                       placeholder="••••••••"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                      className={`w-full bg-slate-950 border rounded-xl pl-9 pr-9 py-2.5 text-xs text-slate-200 focus:outline-none transition-colors ${
+                        confirmPassword
+                          ? confirmPassword === password
+                            ? "border-emerald-500"
+                            : "border-rose-500"
+                          : "border-slate-800 focus:border-indigo-500"
+                      }`}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
+                    {confirmPassword && (
+                      <span className={`material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[16px] ${
+                        confirmPassword === password ? "text-emerald-500" : "text-rose-500"
+                      }`}>
+                        {confirmPassword === password ? "check_circle" : "cancel"}
+                      </span>
+                    )}
                   </div>
+                  {confirmPassword && confirmPassword !== password && (
+                    <p className="text-[10px] text-rose-400 font-bold mt-1">Passwords do not match</p>
+                  )}
                 </div>
 
                 <button

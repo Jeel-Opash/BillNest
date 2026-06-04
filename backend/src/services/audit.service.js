@@ -1,15 +1,7 @@
 import AuditLog from "../models/auditLog.model.js";
+import mongoose from "mongoose";
 
 class AuditService {
-
-
-
-
-
-
-
-
-
   async logAction(organizationId, userId, action, details = {}, ipAddress = "", userAgent = "") {
     try {
       await AuditLog.create({
@@ -20,26 +12,21 @@ class AuditService {
         userEmail: "system@billnest.com",
         action,
         resourceType: details.resourceType || action.split("_")[0].toLowerCase() || "other",
-        resourceId: details.resourceId || details.clientId || details.invoiceId || new (await import("mongoose")).default.Types.ObjectId(),
+        resourceId: details.resourceId || details.clientId || details.invoiceId || new mongoose.Types.ObjectId(),
         details,
         ipAddress,
         userAgent,
       });
-    } catch (error) {
-      console.error("Failed to log audit action:", error);
-    }
+    } catch (_) {}
   }
 
-
-
-
-
-
   async getAuditLogs(organizationId, query = {}) {
-    const limit = parseInt(query.limit) || 50;
+    const limit = Math.min(parseInt(query.limit) || 50, 200);
     const skip = parseInt(query.skip) || 0;
-
-    return await AuditLog.find({ organization: organizationId })
+    const filter = { organization: organizationId };
+    if (query.action) filter.action = { $regex: query.action, $options: "i" };
+    if (query.userId) filter.userId = query.userId;
+    return AuditLog.find(filter)
       .populate("user", "name email role")
       .sort({ createdAt: -1 })
       .skip(skip)

@@ -7,6 +7,9 @@ const SettingsTab = ({
 }) => {
   const [localSettings, setLocalSettings] = useState({ ...orgSettings });
   const [logoPreview, setLogoPreview] = useState(orgSettings.logo || "");
+  const [targetCurrency, setTargetCurrency] = useState("USD");
+  const [exchangeAmount, setExchangeAmount] = useState("1000");
+  const [markupPercent, setMarkupPercent] = useState("0");
 
 
   const handleLogoChange = (e) => {
@@ -25,6 +28,21 @@ const SettingsTab = ({
     e.preventDefault();
     setOrgSettings(localSettings);
     showToast("Organization and billing parameters saved successfully.", "success");
+  };
+
+  const baseCurrency = localSettings.currency || "INR";
+  
+  const currencyRates = {
+    INR: { USD: 0.012, EUR: 0.011, GBP: 0.0094, JPY: 1.88, AUD: 0.018, CAD: 0.016, SGD: 0.016 },
+    USD: { INR: 83.5, EUR: 0.92, GBP: 0.78, JPY: 156.4, AUD: 1.51, CAD: 1.37, SGD: 1.35 },
+    EUR: { INR: 90.7, USD: 1.09, GBP: 0.85, JPY: 170.0, AUD: 1.64, CAD: 1.49, SGD: 1.47 }
+  };
+
+  const getExchangeRate = () => {
+    const baseRates = currencyRates[baseCurrency] || currencyRates["INR"];
+    const rate = baseRates[targetCurrency] || 1;
+    const markupMultiplier = 1 + (parseFloat(markupPercent) || 0) / 100;
+    return rate * markupMultiplier;
   };
 
   return (
@@ -240,6 +258,77 @@ const SettingsTab = ({
                 Security
               </div>
               <span className="text-slate-900 font-black text-sm">Standard 2FA</span>
+            </div>
+          </div>
+
+          {/* SaaS Exchange Rates Converter Widget */}
+          <div className="bg-gradient-to-br from-indigo-950 to-slate-900 text-white p-6 rounded-3xl border border-indigo-950 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800/60 pb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-indigo-400 text-[18px]">currency_exchange</span>
+                <span className="font-heading text-xs font-bold uppercase tracking-wider text-indigo-300">FX Rates Converter</span>
+              </div>
+              <span className="text-[8px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold uppercase">LIVE FEED</span>
+            </div>
+
+            <p className="text-[10px] text-slate-400 leading-normal font-semibold">
+              Calculate international invoicing conversions relative to your base currency (<strong>{baseCurrency}</strong>).
+            </p>
+
+            <div className="space-y-3.5 text-xs font-semibold">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-slate-500 text-[9px] font-bold uppercase tracking-wider mb-1">Target FX Currency</label>
+                  <select
+                    className="w-full bg-slate-850 border border-slate-700 text-white rounded-xl p-2.5 text-xs font-bold outline-none cursor-pointer"
+                    value={targetCurrency}
+                    onChange={(e) => setTargetCurrency(e.target.value)}
+                  >
+                    {Object.keys(currencyRates[baseCurrency] || currencyRates["INR"]).map((cur) => (
+                      <option key={cur} value={cur}>{cur}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 text-[9px] font-bold uppercase tracking-wider mb-1">FX Markup Buffer (%)</label>
+                  <select
+                    className="w-full bg-slate-850 border border-slate-700 text-white rounded-xl p-2.5 text-xs font-bold outline-none cursor-pointer"
+                    value={markupPercent}
+                    onChange={(e) => setMarkupPercent(e.target.value)}
+                  >
+                    <option value="0">0% (Standard)</option>
+                    <option value="1">1% (Stripe FX)</option>
+                    <option value="1.5">1.5% (Safe Buffer)</option>
+                    <option value="2.5">2.5% (High Volatility)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-500 text-[9px] font-bold uppercase tracking-wider mb-1">Value to Convert ({baseCurrency})</label>
+                <input
+                  type="number"
+                  placeholder="1000"
+                  className="w-full bg-slate-850 border border-slate-700 text-white rounded-xl p-2.5 text-xs font-bold outline-none"
+                  value={exchangeAmount}
+                  onChange={(e) => setExchangeAmount(e.target.value)}
+                />
+              </div>
+
+              {/* Live exchange result visual card */}
+              <div className="bg-slate-900/60 p-4 border border-slate-800 rounded-2xl space-y-2">
+                <div className="flex justify-between items-center text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                  <span>Current Exchange Rate</span>
+                  <span className="font-mono text-white">1 {baseCurrency} = {getExchangeRate().toFixed(4)} {targetCurrency}</span>
+                </div>
+                <div className="flex justify-between items-baseline font-black pt-1">
+                  <span className="text-slate-400 text-xs">Converted Total:</span>
+                  <span className="text-lg text-indigo-400">
+                    {targetCurrency} {(parseFloat(exchangeAmount || 0) * getExchangeRate()).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 

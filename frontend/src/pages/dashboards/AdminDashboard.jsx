@@ -37,6 +37,7 @@ const AdminDashboard = () => {
   };
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
 
   const [clients, setClients] = useState([
@@ -110,15 +111,31 @@ const AdminDashboard = () => {
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
 
-      <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col p-5 bg-white border-r border-slate-100 z-50">
-        <div className="mb-6 flex items-center gap-3 px-2">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-100">
-            <span className="material-symbols-outlined text-[22px]">verified_user</span>
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-45 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`fixed left-0 top-0 h-screen w-64 flex flex-col p-5 bg-white border-r border-slate-100 z-50 transition-transform duration-300 md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="mb-6 flex items-center justify-between px-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-100">
+              <span className="material-symbols-outlined text-[22px]">verified_user</span>
+            </div>
+            <div>
+              <h1 className="font-extrabold text-slate-900 text-base leading-tight truncate max-w-[120px]">{user?.organization?.name || "Workspace"}</h1>
+              <p className="text-[10px] text-slate-400 font-black tracking-wider uppercase mt-0.5">Admin Console</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-extrabold text-slate-900 text-base leading-tight truncate max-w-[150px]">{user?.organization?.name || "Workspace"}</h1>
-            <p className="text-[10px] text-slate-400 font-black tracking-wider uppercase mt-0.5">Admin Console</p>
-          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden text-slate-400 hover:text-slate-600 hover:bg-slate-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
@@ -137,9 +154,11 @@ const AdminDashboard = () => {
           ].map((menu) => {
             const isActive = activePage === menu.id;
             return (
-              <button
-                key={menu.id}
-                onClick={() => handlePageChange(menu.id)}
+              <button key={menu.id}
+                onClick={() => {
+                  handlePageChange(menu.id);
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-150 text-left cursor-pointer text-xs ${
                   isActive
                     ? "bg-indigo-50 text-indigo-600 shadow-sm"
@@ -155,7 +174,10 @@ const AdminDashboard = () => {
 
         <div className="mt-auto pt-4 border-t border-slate-100 flex items-center gap-3">
           <button
-            onClick={() => handlePageChange("profile")}
+            onClick={() => {
+              handlePageChange("profile");
+              setIsSidebarOpen(false);
+            }}
             className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity text-left outline-none cursor-pointer"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 border border-indigo-200/50 shadow-sm flex items-center justify-center font-extrabold text-white text-sm select-none flex-shrink-0">
@@ -169,10 +191,16 @@ const AdminDashboard = () => {
         </div>
       </aside>
 
-      <main className="ml-64 flex-1 min-h-screen flex flex-col">
+      <main className="md:ml-64 ml-0 flex-1 min-h-screen flex flex-col min-w-0">
 
-        <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-8 bg-white/80 backdrop-blur-md border-b border-slate-100">
-          <div className="flex items-center">
+        <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-4 md:px-8 bg-white/80 backdrop-blur-md border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-950 rounded-xl hover:bg-slate-100/80 transition-all cursor-pointer outline-none"
+            >
+              <span className="material-symbols-outlined text-[22px]">menu</span>
+            </button>
             <span className="text-sm font-bold text-slate-700 capitalize">
               {activePage.replace("-", " ")}
             </span>
@@ -328,7 +356,12 @@ const AdminDashboard = () => {
           )}
 
           {activePage === "audit" && (
-            <AdminAuditTab />
+            <AdminAuditTab
+              clients={clients}
+              invoices={invoices}
+              teamList={teamList}
+              showToast={showToast}
+            />
           )}
 
           {activePage === "settings" && (

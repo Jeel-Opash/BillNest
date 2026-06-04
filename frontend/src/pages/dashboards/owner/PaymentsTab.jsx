@@ -20,55 +20,65 @@ const PaymentsTab = ({
   const [selectedStripeLog, setSelectedStripeLog] = useState(null);
   const [refundTarget, setRefundTarget] = useState(null);
   const [refundReason, setRefundReason] = useState("Duplicate charge");
+  const [stripeLogs, setStripeLogs] = useState([]);
 
-
-  const [stripeLogs] = useState([
-    {
-      id: "evt_3N5b9eLkdIwEfV1a2jK0x9pQ",
-      type: "payment_intent.succeeded",
-      created: "2026-05-20T14:32:00Z",
-      livemode: true,
-      api_version: "2023-10-16",
-      data: {
-        object: {
-          id: "pi_3N5b9eLkdIwEfV1a",
-          amount: 1500000,
-          currency: "inr",
-          payment_method_types: ["card"],
-          status: "succeeded",
-          charges: {
-            data: [
-              {
-                id: "ch_3N5b9eLkdIwEfV1a",
-                receipt_url: "https://stripe.com/receipt/ch_3N5b9eLkdIwEfV1a",
-                billing_details: { email: "finance@pixelstudio.com", name: "Pixel Creative Labs" }
+  React.useEffect(() => {
+    const email = "owner@codecraft.com";
+    const updateLogs = () => {
+      const stored = JSON.parse(localStorage.getItem(`workspace_${email}_stripe_logs`) || "[]");
+      const defaultLogs = [
+        {
+          id: "evt_3N5b9eLkdIwEfV1a2jK0x9pQ",
+          type: "payment_intent.succeeded",
+          created: "2026-05-20T14:32:00Z",
+          livemode: true,
+          api_version: "2023-10-16",
+          data: {
+            object: {
+              id: "pi_3N5b9eLkdIwEfV1a",
+              amount: 1500000,
+              currency: "inr",
+              payment_method_types: ["card"],
+              status: "succeeded",
+              charges: {
+                data: [
+                  {
+                    id: "ch_3N5b9eLkdIwEfV1a",
+                    receipt_url: "https://stripe.com/receipt/ch_3N5b9eLkdIwEfV1a",
+                    billing_details: { email: "finance@pixelstudio.com", name: "Pixel Creative Labs" }
+                  }
+                ]
               }
-            ]
+            }
+          }
+        },
+        {
+          id: "evt_3N5b8fLkdIwEfV1b1jZ9x8wR",
+          type: "payment_intent.payment_failed",
+          created: "2026-05-15T09:12:00Z",
+          livemode: true,
+          api_version: "2023-10-16",
+          data: {
+            object: {
+              id: "pi_3N5b8fLkdIwEfV1b",
+              amount: 500000,
+              currency: "inr",
+              last_payment_error: {
+                code: "card_declined",
+                decline_code: "insufficient_funds",
+                message: "The card has insufficient funds to complete this transaction."
+              },
+              status: "requires_payment_method"
+            }
           }
         }
-      }
-    },
-    {
-      id: "evt_3N5b8fLkdIwEfV1b1jZ9x8wR",
-      type: "payment_intent.payment_failed",
-      created: "2026-05-15T09:12:00Z",
-      livemode: true,
-      api_version: "2023-10-16",
-      data: {
-        object: {
-          id: "pi_3N5b8fLkdIwEfV1b",
-          amount: 500000,
-          currency: "inr",
-          last_payment_error: {
-            code: "card_declined",
-            decline_code: "insufficient_funds",
-            message: "The card has insufficient funds to complete this transaction."
-          },
-          status: "requires_payment_method"
-        }
-      }
-    }
-  ]);
+      ];
+      setStripeLogs([...stored, ...defaultLogs]);
+    };
+    updateLogs();
+    window.addEventListener("storage", updateLogs);
+    return () => window.removeEventListener("storage", updateLogs);
+  }, []);
 
 
   

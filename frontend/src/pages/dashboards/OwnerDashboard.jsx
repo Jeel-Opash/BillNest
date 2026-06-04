@@ -48,6 +48,7 @@ const OwnerDashboard = () => {
   };
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleExportCSV = () => {
     const headers = ["Invoice ID", "Client", "Amount (INR)", "Date", "Due Date", "Status"];
@@ -671,18 +672,36 @@ const OwnerDashboard = () => {
     showToast(`API Key '${newKeyLabel}' generated.`, "success");
   };
 
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
 
-      <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col p-5 bg-white border-r border-slate-100 z-50">
-        <div className="mb-6 flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
-            AF
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-45 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`fixed left-0 top-0 h-screen w-64 flex flex-col p-5 bg-white border-r border-slate-100 z-50 transition-transform duration-300 md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
+              AF
+            </div>
+            <div className="flex flex-col min-w-0">
+              <h1 className="font-heading text-lg font-bold text-slate-900 tracking-tight leading-none">AgencyFlow</h1>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Enterprise Plan</p>
+            </div>
           </div>
-          <div className="flex flex-col min-w-0">
-            <h1 className="font-heading text-lg font-bold text-slate-900 tracking-tight leading-none">AgencyFlow</h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Enterprise Plan</p>
-          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden text-slate-400 hover:text-slate-600 hover:bg-slate-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
         </div>
 
         <nav className="flex-1 space-y-5 overflow-y-auto pr-1">
@@ -721,7 +740,10 @@ const OwnerDashboard = () => {
                 return (
                   <button
                     key={menu.id}
-                    onClick={() => handlePageChange(menu.id)}
+                    onClick={() => {
+                      handlePageChange(menu.id);
+                      setIsSidebarOpen(false);
+                    }}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-semibold text-xs transition-all duration-150 text-left ${isActive
                       ? "bg-indigo-50/80 text-indigo-600 shadow-sm"
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
@@ -740,7 +762,10 @@ const OwnerDashboard = () => {
 
         <div className="mt-auto pt-4 border-t border-slate-100 flex items-center gap-3">
           <button
-            onClick={() => handlePageChange("profile")}
+            onClick={() => {
+              handlePageChange("profile");
+              setIsSidebarOpen(false);
+            }}
             className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity text-left outline-none"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 border border-indigo-200/50 shadow-sm flex items-center justify-center font-extrabold text-white text-base select-none flex-shrink-0">
@@ -754,14 +779,20 @@ const OwnerDashboard = () => {
         </div>
       </aside>
 
-      <main className="ml-64 flex-1 min-h-screen flex flex-col">
+      <main className="md:ml-64 ml-0 flex-1 min-h-screen flex flex-col min-w-0">
 
-        <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-8 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm">
-          <div className="flex items-center">
+        <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-4 md:px-8 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-950 rounded-xl hover:bg-slate-100/80 transition-all cursor-pointer outline-none"
+            >
+              <span className="material-symbols-outlined text-[22px]">menu</span>
+            </button>
             <div className="relative border border-slate-200/60 focus-within:border-indigo-500/50 rounded-xl bg-slate-50/50">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
               <input
-                className="pl-9 pr-4 py-1.5 bg-transparent border-none rounded-xl w-64 focus:ring-0 text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none"
+                className="pl-9 pr-4 py-1.5 bg-transparent border-none rounded-xl w-40 sm:w-64 focus:ring-0 text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none"
                 placeholder="Search transactions, clients..."
                 type="text"
                 value={clientSearch}
@@ -893,6 +924,8 @@ const OwnerDashboard = () => {
               clients={clients}
               invoices={invoices}
               setInvoices={setInvoices}
+              payments={payments}
+              setPayments={setPayments}
               builderClient={builderClient}
               setBuilderClient={setBuilderClient}
               builderDueDate={builderDueDate}
@@ -927,46 +960,6 @@ const OwnerDashboard = () => {
             />
           )}
 
-          {activePage === "payments" && (
-            <div className="flex flex-col gap-6">
-              <div>
-                <h3 className="font-heading text-2xl font-bold text-slate-900">Payments</h3>
-                <p className="text-slate-500 text-sm mt-1">Review live financial actions, payout status indicators, and Stripe processor logs.</p>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                <div className="flex justify-between items-center mb-2 border-b border-slate-50 pb-3">
-                  <h4 className="font-heading text-lg font-bold text-slate-900">Stripe Transaction Logs</h4>
-                  <button className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">tune</span>
-                    Filter logs
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {payments.map(p => (
-                    <div key={p.id} className="p-4 bg-slate-50/50 rounded-xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-200/80 transition-all">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-950 text-xs">{p.id}</span>
-                          <span className="bg-slate-200/60 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-bold">INV REF: {p.invoice}</span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1">Client: <span className="font-semibold text-slate-700">{p.client}</span> | Channel: {p.method} | Date: {p.date}</p>
-                      </div>
-                      <div className="text-right flex flex-col items-end gap-1 w-full sm:w-auto">
-                        <h5 className="font-extrabold text-slate-900 text-sm">₹{p.amount.toLocaleString()}</h5>
-                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${p.status === "succeeded"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-red-50 text-red-700"
-                          }`}>{p.status}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {activePage === "create-workspace" && (
             <CreateWorkspaceTab />
           )}
@@ -982,242 +975,6 @@ const OwnerDashboard = () => {
               handleSendInvite={handleSendInvite}
               showToast={showToast}
             />
-          )}
-
-          {activePage === "reports" && (
-            <div className="flex flex-col gap-6">
-              <div>
-                <h3 className="font-heading text-2xl font-bold text-slate-900">Reports</h3>
-                <p className="text-slate-500 text-sm mt-1">Simulate organizations financial trajectory, balance reserves, and export tax summaries.</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                  <h4 className="font-heading text-lg font-bold text-slate-900">Revenue Projection Curves</h4>
-
-                  <div className="h-64 relative w-full mb-4">
-                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
-                      <div className="border-b border-slate-50 w-full h-0"></div>
-                      <div className="border-b border-slate-50 w-full h-0"></div>
-                      <div className="border-b border-slate-50 w-full h-0"></div>
-                    </div>
-
-                    <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 400 100">
-                      <defs>
-                        <linearGradient id="projGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10b981" stopOpacity="0.1" />
-                          <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      <path className="text-emerald-500" d="M 0 90 L 100 80 L 200 60 L 300 45 L 400 15" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                      <path d="M 0 90 L 100 80 L 200 60 L 300 45 L 400 15 L 400 100 L 0 100 Z" fill="url(#projGradient)" />
-                      <circle cx="100" cy="80" r="4" className="fill-white stroke-emerald-500 stroke-[2px]" />
-                      <circle cx="200" cy="60" r="4" className="fill-white stroke-emerald-500 stroke-[2px]" />
-                      <circle cx="300" cy="45" r="4" className="fill-white stroke-emerald-500 stroke-[2px]" />
-                      <circle cx="400" cy="15" r="4" className="fill-emerald-500 stroke-white stroke-[2px]" />
-                    </svg>
-
-                    <div className="absolute inset-x-0 bottom-0 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase pt-2">
-                      <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>June (Proj)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-6">
-                  <div>
-                    <h4 className="font-heading text-lg font-bold text-slate-900">Export Raw Tenant Logs</h4>
-                    <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                      Download complete accounting statements or invoices scoped under your current organization isolated workspace context.
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    <button onClick={handleExportCSV} className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-100 transition-colors shadow-sm outline-none">
-                      Export Invoices (.CSV)
-                    </button>
-                    <button onClick={handleExportPDF} className="w-full bg-indigo-600 border border-transparent text-white py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm outline-none focus:outline-none focus:ring-0">
-                      Export Tax Statement (.PDF)
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activePage === "audit" && (
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h3 className="font-heading text-2xl font-bold text-slate-900">Cryptographic Audit Logs</h3>
-                  <p className="text-slate-500 text-sm mt-1">Review organizational actions, timestamps, and security compliance registers with immutable ledger verification.</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-                  <button className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-600 px-3.5 py-2 rounded-xl text-xs font-semibold hover:bg-slate-50 transition-colors shadow-sm">
-                    <span className="material-symbols-outlined text-[16px] text-slate-500">tune</span>
-                    Filters
-                  </button>
-                  <div className="relative">
-                    <select className="bg-white border border-slate-200 text-slate-600 pl-3.5 pr-8 py-2 rounded-xl text-xs font-semibold hover:bg-slate-50 transition-colors shadow-sm outline-none cursor-pointer appearance-none">
-                      <option>ACTIVE SCOPE: CodeCraft Agency</option>
-                    </select>
-                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none">arrow_drop_down</span>
-                  </div>
-                  <button onClick={() => showToast("Exporting ledger data...", "info")} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors shadow-sm whitespace-nowrap">
-                    <span className="material-symbols-outlined text-[16px]">download</span>
-                    Export Logs
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-                <div className="flex justify-between items-center border-b border-slate-50 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-indigo-600 text-sm">verified_user</span>
-                    <h4 className="font-heading text-lg font-bold text-slate-900">Activity Ledger</h4>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 font-bold bg-emerald-50/50 border border-emerald-100 px-2.5 py-1 rounded-full">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                    System Online
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="text-left border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                        <th className="pb-3">Actor</th>
-                        <th className="pb-3">Action</th>
-                        <th className="pb-3">Details</th>
-                        <th className="pb-3">Time</th>
-                        <th className="pb-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-xs font-semibold text-slate-700">
-                      {auditLogs.map((log, index) => {
-                        const actorInitial = log.actor.charAt(0);
-                        const colors = [
-                          "bg-indigo-50 border-indigo-100 text-indigo-600",
-                          "bg-purple-50 border-purple-100 text-purple-600",
-                          "bg-amber-50 border-amber-100 text-amber-600",
-                          "bg-rose-50 border-rose-100 text-rose-600",
-                          "bg-teal-50 border-teal-100 text-teal-600"
-                        ];
-                        const randomColor = colors[index % colors.length];
-
-                        let actionClass = "bg-slate-100 text-slate-700 border-slate-200/50";
-                        if (log.action === "CLIENT_CREATED") actionClass = "bg-slate-100 text-slate-700 border border-slate-200/50";
-                        else if (log.action === "INVOICE_GENERATED") actionClass = "bg-amber-50 text-amber-800 border border-amber-200/60";
-                        else if (log.action === "CLIENT_GST_UPDATED") actionClass = "bg-teal-50 text-teal-800 border border-teal-200/60";
-                        else if (log.action === "AUTH_FAIL") actionClass = "bg-red-50 text-red-800 border border-red-200/60";
-                        else if (log.action === "WORKSPACE_SETTINGS_CHANGED") actionClass = "bg-indigo-50 text-indigo-800 border border-indigo-200/60";
-
-                        return (
-                          <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                            <td className="py-3.5">
-                              <div className="flex items-center gap-2.5">
-                                <div className={`w-8 h-8 rounded-full ${randomColor} border flex items-center justify-center font-bold text-xs flex-shrink-0`}>
-                                  {actorInitial}
-                                </div>
-                                <span className="font-bold text-slate-900">{log.actor}</span>
-                              </div>
-                            </td>
-                            <td className="py-3.5">
-                              <span className={`px-2 py-0.5 rounded font-mono text-[10px] uppercase font-bold tracking-wider ${actionClass}`}>{log.action}</span>
-                            </td>
-                            <td className="py-3.5 text-slate-500 font-medium">{log.details}</td>
-                            <td className="py-3.5 text-slate-400 font-medium">{log.time}</td>
-                            <td className="py-3.5">
-                              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${log.status === "SUCCESS"
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
-                                : "bg-rose-50 text-rose-700 border border-rose-200/50"
-                                }`}>{log.status}</span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-50 pt-4 mt-2 text-xs">
-                  <span className="text-slate-400 font-bold">Showing 1-5 of 2,492 entries</span>
-                  <div className="flex items-center gap-1">
-                    <button className="w-8 h-8 border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-50 font-bold transition-all">&lt;</button>
-                    <button className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-bold shadow-sm">1</button>
-                    <button className="w-8 h-8 border border-slate-200 rounded-lg flex items-center justify-center text-slate-600 hover:bg-slate-50 font-bold transition-all">2</button>
-                    <button className="w-8 h-8 border border-slate-200 rounded-lg flex items-center justify-center text-slate-600 hover:bg-slate-50 font-bold transition-all">3</button>
-                    <button className="w-8 h-8 border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-50 font-bold transition-all">&gt;</button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                        <span className="material-symbols-outlined text-[18px]">verified</span>
-                      </div>
-                      <span className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded font-bold uppercase">Optimal</span>
-                    </div>
-                    <h5 className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Security Score</h5>
-                    <h4 className="font-extrabold text-slate-900 text-2xl">98/100</h4>
-                  </div>
-                  <div className="w-full">
-                    <div className="flex justify-between text-[10px] font-bold mb-1.5">
-                      <span className="text-indigo-600">+2.4% vs last month</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500" style={{ width: "98%" }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                        <span className="material-symbols-outlined text-[18px]">key</span>
-                      </div>
-                      <span className="text-[10px] text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded font-bold uppercase">Standard Encryption</span>
-                    </div>
-                    <h5 className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Ledger Integrity</h5>
-                    <h4 className="font-bold text-slate-800 text-sm flex items-center gap-1.5 mt-2">
-                      <span className="material-symbols-outlined text-emerald-500 text-[18px]">check_circle</span>
-                      Blocks Verified (SHA-256)
-                    </h4>
-                  </div>
-                  <div className="text-[9px] font-mono text-slate-400 bg-slate-50 border border-slate-200/50 p-2 rounded-lg truncate">
-                    LAST HASH: fca17643b9c745d...982c
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                        <span className="material-symbols-outlined text-[18px]">analytics</span>
-                      </div>
-                      <span className="text-[10px] text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded font-bold uppercase">Live</span>
-                    </div>
-                    <h5 className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Activity Velocity</h5>
-                    <div className="flex items-end gap-1 h-8 mt-2.5">
-                      <div className="w-1.5 bg-indigo-100 h-4 rounded-full"></div>
-                      <div className="w-1.5 bg-indigo-200 h-6 rounded-full"></div>
-                      <div className="w-1.5 bg-indigo-300 h-5 rounded-full"></div>
-                      <div className="w-1.5 bg-indigo-600 h-8 rounded-full"></div>
-                      <div className="w-1.5 bg-indigo-500 h-7 rounded-full"></div>
-                      <div className="w-1.5 bg-indigo-200 h-4 rounded-full"></div>
-                      <div className="w-1.5 bg-indigo-400 h-6 rounded-full"></div>
-                      <div className="w-1.5 bg-indigo-600 h-8 rounded-full"></div>
-                      <div className="w-1.5 bg-indigo-300 h-5 rounded-full"></div>
-                    </div>
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-500">
-                    Average 42 events/hour today
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
 
           {activePage === "integrations" && (
@@ -1309,11 +1066,52 @@ const OwnerDashboard = () => {
             <AuditLogsTab
               user={user}
               showToast={showToast}
+              clients={clients}
+              invoices={invoices}
+              payments={payments}
+              teamList={teamList}
+              subscriptions={subscriptions}
             />
           )}
 
         </div>
       </main>
+
+      {/* ===== Floating Quick Actions FAB ===== */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+        {isQuickActionsOpen && (
+          <div className="flex flex-col items-end gap-2 animate-fade-in mb-1">
+            {[
+              { label: "New Invoice", icon: "receipt_long", page: "invoices", color: "bg-indigo-600 hover:bg-indigo-700" },
+              { label: "Add Client", icon: "person_add", page: "clients", color: "bg-emerald-600 hover:bg-emerald-700" },
+              { label: "Payments", icon: "payments", page: "payments", color: "bg-violet-600 hover:bg-violet-700" },
+              { label: "Audit Logs", icon: "terminal", page: "audit", color: "bg-rose-600 hover:bg-rose-700" },
+              { label: "Reports", icon: "monitoring", page: "reports", color: "bg-amber-500 hover:bg-amber-600" },
+              { label: "Settings", icon: "settings", page: "settings", color: "bg-slate-700 hover:bg-slate-800" },
+            ].map((action) => (
+              <button
+                key={action.page}
+                onClick={() => { handlePageChange(action.page); setIsQuickActionsOpen(false); }}
+                className={`flex items-center gap-2.5 ${action.color} text-white px-4 py-2.5 rounded-2xl text-xs font-bold shadow-lg transition-all cursor-pointer outline-none`}
+              >
+                <span className="material-symbols-outlined text-[16px]">{action.icon}</span>
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
+          className={`w-13 h-13 w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl cursor-pointer outline-none transition-all duration-300 ${
+            isQuickActionsOpen
+              ? "bg-rose-600 hover:bg-rose-700 rotate-45"
+              : "bg-indigo-600 hover:bg-indigo-700"
+          } text-white`}
+          title="Quick Actions"
+        >
+          <span className="material-symbols-outlined text-[26px]">{isQuickActionsOpen ? "close" : "add"}</span>
+        </button>
+      </div>
 
       {/* Centralized Publish Announcement Modal */}
       {showPublishModal && (

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import StripeCheckoutModal from "../../../components/StripeCheckoutModal";
 
 const formatCurrency = (val, currency = "INR") => {
   return new Intl.NumberFormat(currency === "USD" ? "en-US" : currency === "EUR" ? "en-DE" : "en-IN", {
@@ -12,8 +13,24 @@ const InvoicesTab = ({
   clients = [],
   invoices = [],
   setInvoices,
+  payments = [],
+  setPayments,
   showToast
 }) => {
+  const [activeTemplate, setActiveTemplate] = useState("classic");
+  const [selectedInvoiceForPay, setSelectedInvoiceForPay] = useState(null);
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+
+  // Statement PDF Builder & Previewer Modal State
+  const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewCompanyName, setPreviewCompanyName] = useState("BillNest SaaS Platform");
+  const [previewLogoUrl, setPreviewLogoUrl] = useState("");
+  const [previewFooter, setPreviewFooter] = useState("Generated and cryptographically compiled by BillNest Multi-Tenant SaaS Ledger.");
+  const [previewShowTax, setPreviewShowTax] = useState(true);
+  const [previewShowNotes, setPreviewShowNotes] = useState(true);
+  const [previewCurrency, setPreviewCurrency] = useState("INR");
+  const [previewScale, setPreviewScale] = useState(0.9);
 
   const [currentSubTab, setCurrentSubTab] = useState("all");
 
@@ -181,7 +198,102 @@ const InvoicesTab = ({
   };
 
 
-  const handleCustomGeneratePDF = (inv) => {
+  const getTemplateStyles = (theme) => {
+    switch (theme) {
+      case "midnight":
+        return `
+          body { font-family: 'Outfit', 'Inter', sans-serif; color: #f1f5f9; padding: 40px; margin: 0; background-color: #0f172a; }
+          .invoice-box { max-width: 800px; margin: auto; padding: 35px; border: 1px solid #334155; border-radius: 24px; background: radial-gradient(circle at top right, #1e293b, #0f172a); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+          .header-row { display: flex; justify-content: space-between; border-bottom: 2px solid #818cf8; padding-bottom: 24px; margin-bottom: 30px; align-items: center; }
+          .company-name { font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; }
+          .invoice-title { font-size: 34px; font-weight: 900; color: #818cf8; text-align: right; text-transform: uppercase; letter-spacing: 1px; }
+          .metadata-row { display: flex; justify-content: space-between; margin-bottom: 35px; font-size: 13px; color: #cbd5e1; }
+          .bill-to { font-weight: bold; text-transform: uppercase; font-size: 10px; color: #94a3b8; margin-bottom: 6px; letter-spacing: 1px; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .table th { background: #1e293b; border-bottom: 2px solid #475569; padding: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #94a3b8; text-align: left; }
+          .table td { padding: 14px 12px; border-bottom: 1px solid #334155; font-size: 13px; color: #e2e8f0; }
+          .text-right { text-align: right !important; }
+          .totals-section { display: flex; justify-content: flex-end; }
+          .totals-table { width: 320px; border-collapse: collapse; font-size: 13px; }
+          .totals-table td { padding: 9px 12px; color: #cbd5e1; }
+          .grand-total { font-size: 20px; font-weight: 950; color: #818cf8; border-top: 2px solid #475569; padding-top: 14px !important; }
+          .notes-card { margin-top: 40px; padding: 20px; background-color: #1e293b; border-radius: 16px; font-size: 12px; border-left: 4px solid #818cf8; color: #94a3b8; }
+          .footer { margin-top: 60px; font-size: 10px; text-align: center; color: #64748b; border-top: 1px solid #334155; padding-top: 20px; font-weight: bold; }
+        `;
+      case "sunset":
+        return `
+          body { font-family: 'Outfit', 'Inter', sans-serif; color: #2d3748; padding: 40px; margin: 0; background-color: #fffaf0; }
+          .invoice-box { max-width: 800px; margin: auto; padding: 35px; border: 1px solid #fbd38d; border-radius: 20px; background: #ffffff; box-shadow: 0 10px 25px rgba(221,107,32,0.05); }
+          .header-row { display: flex; justify-content: space-between; border-bottom: 4px solid #ed8936; padding-bottom: 20px; margin-bottom: 30px; align-items: center; }
+          .company-name { font-size: 26px; font-weight: 900; color: #2c5282; }
+          .invoice-title { font-size: 32px; font-weight: 900; color: #dd6b20; text-align: right; text-transform: uppercase; }
+          .metadata-row { display: flex; justify-content: space-between; margin-bottom: 35px; font-size: 13px; }
+          .bill-to { font-weight: bold; text-transform: uppercase; font-size: 10px; color: #718096; margin-bottom: 6px; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .table th { background: #feebc8; border-bottom: 2px solid #fbd38d; padding: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #c05621; text-align: left; }
+          .table td { padding: 14px 12px; border-bottom: 1px solid #edf2f7; font-size: 13px; }
+          .text-right { text-align: right !important; }
+          .totals-section { display: flex; justify-content: flex-end; }
+          .totals-table { width: 320px; border-collapse: collapse; font-size: 13px; }
+          .totals-table td { padding: 9px 12px; }
+          .grand-total { font-size: 20px; font-weight: 900; color: #dd6b20; border-top: 2px solid #fbd38d; padding-top: 14px !important; }
+          .notes-card { margin-top: 40px; padding: 16px; background-color: #fffaf0; border-radius: 12px; font-size: 12px; border-left: 4px solid #ed8936; }
+          .footer { margin-top: 60px; font-size: 10px; text-align: center; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 20px; font-weight: bold; }
+        `;
+      case "minimalist":
+        return `
+          body { font-family: 'Inter', sans-serif; color: #1a202c; padding: 50px; margin: 0; background: #ffffff; }
+          .invoice-box { max-width: 800px; margin: auto; padding: 10px; }
+          .header-row { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 40px; align-items: flex-end; }
+          .company-name { font-size: 22px; font-weight: bold; color: #000000; }
+          .invoice-title { font-size: 24px; font-weight: 300; color: #718096; text-align: right; text-transform: uppercase; }
+          .metadata-row { display: flex; justify-content: space-between; margin-bottom: 40px; font-size: 12px; color: #4a5568; }
+          .bill-to { font-weight: bold; text-transform: uppercase; font-size: 9px; color: #a0aec0; margin-bottom: 4px; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+          .table th { border-bottom: 1px solid #1a202c; padding: 10px 6px; font-size: 9px; font-weight: bold; text-transform: uppercase; color: #1a202c; text-align: left; }
+          .table td { padding: 12px 6px; border-bottom: 1px solid #edf2f7; font-size: 12px; }
+          .text-right { text-align: right !important; }
+          .totals-section { display: flex; justify-content: flex-end; }
+          .totals-table { width: 280px; border-collapse: collapse; font-size: 12px; }
+          .totals-table td { padding: 8px 6px; }
+          .grand-total { font-size: 16px; font-weight: bold; color: #000000; border-top: 1px solid #1a202c; padding-top: 12px !important; }
+          .notes-card { margin-top: 50px; font-size: 11px; color: #718096; line-height: 1.5; }
+          .footer { margin-top: 80px; font-size: 9px; text-align: center; color: #cbd5e0; border-top: 1px solid #edf2f7; padding-top: 20px; }
+        `;
+      case "classic":
+      default:
+        return `
+          body { font-family: 'Outfit', 'Inter', sans-serif; color: #1e293b; padding: 40px; margin: 0; background-color: #ffffff; }
+          .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+          .header-row { display: flex; justify-content: space-between; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; align-items: center; }
+          .company-name { font-size: 26px; font-weight: 900; color: #0f172a; tracking-tight; }
+          .invoice-title { font-size: 32px; font-weight: 800; color: #4f46e5; text-align: right; text-transform: uppercase; letter-spacing: 0.5px; }
+          .metadata-row { display: flex; justify-content: space-between; margin-bottom: 35px; font-size: 13px; }
+          .bill-to { font-weight: bold; text-transform: uppercase; font-size: 10px; color: #64748b; margin-bottom: 6px; letter-spacing: 0.5px; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .table th { background: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; text-align: left; }
+          .table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+          .text-right { text-align: right !important; }
+          .totals-section { display: flex; justify-content: flex-end; }
+          .totals-table { width: 320px; border-collapse: collapse; font-size: 13px; }
+          .totals-table td { padding: 9px 12px; }
+          .grand-total { font-size: 20px; font-weight: 900; color: #4f46e5; border-top: 2px solid #e2e8f0; padding-top: 14px !important; }
+          .notes-card { margin-top: 40px; padding: 16px; background-color: #f8fafc; border-radius: 12px; font-size: 12px; border-left: 4px solid #4f46e5; }
+          .footer { margin-top: 60px; font-size: 10px; text-align: center; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; font-weight: bold; }
+        `;
+    }
+  };
+
+  const handleCustomGeneratePDF = (
+    inv,
+    theme = activeTemplate,
+    companyName = previewCompanyName,
+    logoUrl = previewLogoUrl,
+    footer = previewFooter,
+    showTax = previewShowTax,
+    showNotes = previewShowNotes,
+    currency = previewCurrency
+  ) => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       showToast("Pop-up blocker enabled. Please allow pop-ups for BillNest to export PDF.", "error");
@@ -189,44 +301,31 @@ const InvoicesTab = ({
     }
 
     const matchedClient = clients.find(c => c.company === inv.client);
-    
-
     const subtotal = inv.items?.reduce((acc, it) => acc + (it.qty * it.price), 0) || inv.amount;
     const discPct = inv.discount || 0;
     const discountVal = Math.round(subtotal * (discPct / 100));
     const taxPct = inv.taxRate || 18;
-    const taxVal = Math.round((subtotal - discountVal) * (taxPct / 100));
+    const taxVal = showTax ? Math.round((subtotal - discountVal) * (taxPct / 100)) : 0;
+    const finalAmount = Math.max(0, subtotal - discountVal + taxVal);
+
+    const styles = getTemplateStyles(theme);
+    const currencySym = currency === "USD" ? "$" : currency === "EUR" ? "€" : "₹";
 
     printWindow.document.write(`
       <html>
         <head>
           <title>Invoice ${inv.id} - ${inv.client}</title>
           <style>
-            body { font-family: 'Outfit', 'Inter', sans-serif; color: #1e293b; padding: 40px; margin: 0; background-color: #ffffff; }
-            .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-            .header-row { display: flex; justify-content: space-between; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; align-items: center; }
-            .company-name { font-size: 26px; font-weight: 900; color: #0f172a; tracking-tight; }
-            .invoice-title { font-size: 32px; font-weight: 800; color: #4f46e5; text-align: right; text-transform: uppercase; letter-spacing: 0.5px; }
-            .metadata-row { display: flex; justify-content: space-between; margin-bottom: 35px; font-size: 13px; }
-            .bill-to { font-weight: bold; text-transform: uppercase; font-size: 10px; color: #64748b; margin-bottom: 6px; letter-spacing: 0.5px; }
-            .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            .table th { background: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; text-align: left; }
-            .table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
-            .text-right { text-align: right !important; }
-            .totals-section { display: flex; justify-content: flex-end; }
-            .totals-table { width: 320px; border-collapse: collapse; font-size: 13px; }
-            .totals-table td { padding: 9px 12px; }
-            .grand-total { font-size: 20px; font-weight: 900; color: #4f46e5; border-top: 2px solid #e2e8f0; padding-top: 14px !important; }
-            .notes-card { margin-top: 40px; padding: 16px; background-color: #f8fafc; border-radius: 12px; font-size: 12px; border-left: 4px solid #4f46e5; }
-            .footer { margin-top: 60px; font-size: 10px; text-align: center; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; font-weight: bold; }
+            ${styles}
           </style>
         </head>
         <body>
           <div class="invoice-box">
             <div class="header-row">
               <div>
-                <div class="company-name">BillNest SaaS Platform</div>
-                <div style="font-size: 11px; color: #64748b; margin-top: 4px; font-weight: bold;">CRYPTOGRAPHICALLY SECURED WORKSPACE LEDGER</div>
+                ${logoUrl ? `<img src="${logoUrl}" style="max-height: 48px; border-radius: 8px; margin-bottom: 8px; display: block;" />` : ""}
+                <div class="company-name">${companyName}</div>
+                <div style="font-size: 11px; margin-top: 4px; font-weight: bold; opacity: 0.8;">CRYPTOGRAPHICALLY SECURED WORKSPACE LEDGER</div>
               </div>
               <div class="invoice-title">INVOICE</div>
             </div>
@@ -234,14 +333,14 @@ const InvoicesTab = ({
             <div class="metadata-row">
               <div>
                 <div class="bill-to">Bill To:</div>
-                <div style="font-weight: 800; font-size: 16px; color: #0f172a;">${inv.client}</div>
-                ${matchedClient ? `<div style="color: #64748b; margin-top: 4px; line-height: 1.4;">GSTIN: ${matchedClient.taxId || "Unregistered"}<br/>Address: ${matchedClient.address || "Local Entity"}</div>` : '<div style="color: #64748b; margin-top: 4px;">Isolated Client Entity</div>'}
+                <div style="font-weight: 800; font-size: 16px;">${inv.client}</div>
+                ${matchedClient ? `<div style="margin-top: 4px; line-height: 1.4; opacity: 0.8;">GSTIN/Tax ID: ${matchedClient.taxId || "Unregistered"}<br/>Address: ${matchedClient.address || "Local Entity"}</div>` : '<div style="margin-top: 4px; opacity: 0.8;">Isolated Client Entity</div>'}
               </div>
               <div style="text-align: right; line-height: 1.7; font-size: 13px;">
                 <div><strong>Invoice Reference:</strong> ${inv.id}</div>
                 <div><strong>Issue Date:</strong> ${inv.date}</div>
                 <div><strong>Payment Due:</strong> ${inv.dueDate}</div>
-                <div><strong>Status:</strong> <span style="text-transform: uppercase; font-size: 10px; font-weight: 900; color: ${inv.status === 'paid' ? '#10b981' : '#ef4444'}">${inv.status}</span></div>
+                <div><strong>Status:</strong> <span style="text-transform: uppercase; font-size: 10px; font-weight: 900;">${inv.status}</span></div>
               </div>
             </div>
 
@@ -258,9 +357,9 @@ const InvoicesTab = ({
                 ${inv.items?.map(item => `
                   <tr>
                     <td><strong>${item.desc}</strong></td>
-                    <td class="text-right" style="color: #64748b;">${item.qty}</td>
-                    <td class="text-right" style="color: #64748b;">₹${item.price.toLocaleString()}</td>
-                    <td class="text-right" style="font-weight: bold; color: #0f172a;">₹${(item.qty * item.price).toLocaleString()}</td>
+                    <td class="text-right">${item.qty}</td>
+                    <td class="text-right">${currencySym}${item.price.toLocaleString()}</td>
+                    <td class="text-right">${currencySym}${(item.qty * item.price).toLocaleString()}</td>
                   </tr>
                 `).join("") || `<tr><td colspan="4">Service fee standard</td></tr>`}
               </tbody>
@@ -269,37 +368,37 @@ const InvoicesTab = ({
             <div class="totals-section">
               <table class="totals-table">
                 <tr>
-                  <td style="color: #64748b;">Subtotal</td>
-                  <td class="text-right" style="font-weight: bold; color: #0f172a;">₹${subtotal.toLocaleString()}</td>
+                  <td>Subtotal</td>
+                  <td class="text-right">${currencySym}${subtotal.toLocaleString()}</td>
                 </tr>
                 ${discountVal > 0 ? `
                   <tr style="color: #dc2626; font-weight: bold;">
                     <td>Discount (${discPct}%)</td>
-                    <td class="text-right">- ₹${discountVal.toLocaleString()}</td>
+                    <td class="text-right">- ${currencySym}${discountVal.toLocaleString()}</td>
                   </tr>
                 ` : ""}
                 ${taxVal > 0 ? `
                   <tr>
-                    <td style="color: #64748b;">Tax Registration (GST ${taxPct}%)</td>
-                    <td class="text-right" style="font-weight: bold; color: #0f172a;">+ ₹${taxVal.toLocaleString()}</td>
+                    <td>Tax (${taxPct}%)</td>
+                    <td class="text-right">+ ${currencySym}${taxVal.toLocaleString()}</td>
                   </tr>
                 ` : ""}
                 <tr class="grand-total">
                   <td><strong>Amount Due</strong></td>
-                  <td class="text-right" style="font-weight: 900; font-size: 22px; color: #4f46e5;">₹${inv.amount.toLocaleString()}</td>
+                  <td class="text-right"><strong>${currencySym}${finalAmount.toLocaleString()}</strong></td>
                 </tr>
               </table>
             </div>
 
-            ${inv.notes ? `
+            ${(showNotes && inv.notes) ? `
               <div class="notes-card">
-                <div style="font-weight: bold; text-transform: uppercase; font-size: 9px; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Terms & Conditions Notes</div>
-                <div style="line-height: 1.5; color: #334155;">${inv.notes}</div>
+                <div style="font-weight: bold; text-transform: uppercase; font-size: 9px; margin-bottom: 4px; letter-spacing: 0.5px;">Terms & Conditions Notes</div>
+                <div style="line-height: 1.5;">${inv.notes}</div>
               </div>
             ` : ""}
 
             <div class="footer">
-              Generated and cryptographically compiled by BillNest Multi-Tenant SaaS Ledger.
+              ${footer}
             </div>
           </div>
           <script>
@@ -309,7 +408,109 @@ const InvoicesTab = ({
       </html>
     `);
     printWindow.document.close();
-    showToast(`PDF generated for ${inv.id}`, "success");
+    showToast(`PDF Statement exported using theme ${theme.toUpperCase()}!`, "success");
+  };
+
+  const handleOpenPreview = (inv) => {
+    setSelectedInvoiceForPreview(inv);
+    setPreviewCompanyName("BillNest SaaS Platform");
+    setPreviewLogoUrl("");
+    setPreviewFooter("Generated and cryptographically compiled by BillNest Multi-Tenant SaaS Ledger.");
+    setPreviewShowTax(true);
+    setPreviewShowNotes(true);
+    setPreviewCurrency(inv.currency || "INR");
+    setPreviewScale(0.9);
+    setIsPreviewModalOpen(true);
+  };
+
+  const handleOpenCheckout = (inv) => {
+    setSelectedInvoiceForPay(inv);
+    setIsPayModalOpen(true);
+  };
+
+  const handlePaymentSuccess = (txn) => {
+    setInvoices(prev => prev.map(inv => inv.id === txn.invoice ? { ...inv, status: "paid" } : inv));
+    
+    const newPayment = {
+      id: txn.txnId,
+      invoice: txn.invoice,
+      client: txn.client,
+      method: txn.method,
+      amount: txn.amount,
+      status: "succeeded",
+      date: txn.date
+    };
+    if (setPayments) {
+      setPayments(prev => [newPayment, ...prev]);
+    }
+
+    try {
+      const email = "owner@codecraft.com";
+      const existingLogs = JSON.parse(localStorage.getItem(`workspace_${email}_stripe_logs`) || "[]");
+      const newLog = {
+        id: `evt_${Math.random().toString(36).substring(2, 18)}`,
+        type: "payment_intent.succeeded",
+        created: new Date().toISOString(),
+        livemode: false,
+        api_version: "2023-10-16",
+        data: {
+          object: {
+            id: txn.txnId.replace("TXN", "pi"),
+            amount: txn.amount * 100,
+            currency: "inr",
+            payment_method_types: ["card"],
+            status: "succeeded",
+            charges: {
+              data: [
+                {
+                  id: txn.txnId.replace("TXN", "ch"),
+                  receipt_url: "https://stripe.com/receipt/ch_simulation",
+                  billing_details: { email: email, name: txn.client }
+                }
+              ]
+            }
+          }
+        }
+      };
+      localStorage.setItem(`workspace_${email}_stripe_logs`, JSON.stringify([newLog, ...existingLogs]));
+      window.dispatchEvent(new Event("storage"));
+    } catch (err) {
+      console.error(err);
+    }
+
+    showToast(`Invoice ${txn.invoice} paid via Stripe Checkout simulation!`, "success");
+  };
+
+  const handlePaymentFailure = (err) => {
+    try {
+      const email = "owner@codecraft.com";
+      const existingLogs = JSON.parse(localStorage.getItem(`workspace_${email}_stripe_logs`) || "[]");
+      const newLog = {
+        id: `evt_${Math.random().toString(36).substring(2, 18)}`,
+        type: "payment_intent.payment_failed",
+        created: new Date().toISOString(),
+        livemode: false,
+        api_version: "2023-10-16",
+        data: {
+          object: {
+            id: `pi_${Math.random().toString(36).substring(2, 10)}`,
+            amount: err.amount * 100,
+            currency: "inr",
+            last_payment_error: {
+              code: err.code,
+              decline_code: err.decline_code,
+              message: err.message
+            },
+            status: "requires_payment_method"
+          }
+        }
+      };
+      localStorage.setItem(`workspace_${email}_stripe_logs`, JSON.stringify([newLog, ...existingLogs]));
+      window.dispatchEvent(new Event("storage"));
+    } catch (e) {
+      console.error(e);
+    }
+    showToast(`Payment declined: ${err.message}`, "error");
   };
 
   const filteredInvoices = useMemo(() => {
@@ -359,6 +560,39 @@ const InvoicesTab = ({
           </button>
         </div>
       </div>
+
+      {/* Templates Customization row */}
+      {currentSubTab === "all" && (
+        <div className="bg-gradient-to-r from-indigo-900 to-slate-900 p-6 rounded-3xl border border-indigo-950 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 select-none">
+          <div>
+            <h4 className="font-heading text-sm font-black uppercase tracking-wider text-indigo-300">Premium Statement Templates Studio</h4>
+            <p className="text-[10px] text-slate-300 mt-0.5 leading-relaxed font-semibold">
+              Choose a visual design blueprint. Printed PDFs/Exports will render in real time using the active theme.
+            </p>
+          </div>
+
+          <div className="flex bg-slate-800/80 border border-slate-700 p-1 rounded-xl gap-1">
+            {[
+              { id: "classic", label: "Classic Navy" },
+              { id: "midnight", label: "Midnight Luxe" },
+              { id: "sunset", label: "Vibrant Sunset" },
+              { id: "minimalist", label: "Minimal Clean" }
+            ].map(theme => (
+              <button
+                key={theme.id}
+                onClick={() => setActiveTemplate(theme.id)}
+                className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  activeTemplate === theme.id 
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-700/50" 
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                {theme.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ==================== SUBTAB: ALL INVOICES ==================== */}
       {currentSubTab === "all" && (
@@ -467,13 +701,23 @@ const InvoicesTab = ({
 
                             {/* Action: Mark Paid */}
                             {(isSent || isOverdue) && (
-                              <button
-                                onClick={() => handleMarkPaid(inv.id)}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded-lg transition-colors cursor-pointer text-[10px] font-bold"
-                                title="Record client payment clearance"
-                              >
-                                Mark Paid
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => handleMarkPaid(inv.id)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded-lg transition-colors cursor-pointer text-[10px] font-bold"
+                                  title="Record client payment clearance"
+                                >
+                                  Mark Paid
+                                </button>
+                                <button
+                                  onClick={() => handleOpenCheckout(inv)}
+                                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded-lg transition-colors cursor-pointer text-[10px] font-bold flex items-center gap-0.5"
+                                  title="Simulate client Stripe checkout payment flow"
+                                >
+                                  <span className="material-symbols-outlined text-[10px] font-black">credit_card</span>
+                                  Pay (Stripe Sim)
+                                </button>
+                              </>
                             )}
 
                             {/* Action: Void */}
@@ -498,9 +742,9 @@ const InvoicesTab = ({
 
                             {/* Action: PDF */}
                             <button
-                              onClick={() => handleCustomGeneratePDF(inv)}
+                              onClick={() => handleOpenPreview(inv)}
                               className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-1 rounded-lg border border-indigo-100 transition-colors cursor-pointer"
-                              title="Download professional PDF statement"
+                              title="Design & export professional PDF statement"
                             >
                               <span className="material-symbols-outlined text-[13px] font-bold p-0.5">picture_as_pdf</span>
                             </button>
@@ -772,6 +1016,360 @@ const InvoicesTab = ({
             </div>
           </div>
 
+        </div>
+      )}
+      {/* Stripe checkout simulation overlay */}
+      {isPayModalOpen && selectedInvoiceForPay && (
+        <StripeCheckoutModal
+          isOpen={isPayModalOpen}
+          onClose={() => {
+            setIsPayModalOpen(false);
+            setSelectedInvoiceForPay(null);
+          }}
+          invoice={selectedInvoiceForPay}
+          onSuccess={handlePaymentSuccess}
+          onFailure={handlePaymentFailure}
+        />
+      )}
+
+      {/* Premium Statement PDF Builder & Previewer Modal */}
+      {isPreviewModalOpen && selectedInvoiceForPreview && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-[28px] shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col md:flex-row overflow-hidden animate-fade-in text-slate-100">
+            
+            {/* Left Options Column (1/3 width) */}
+            <div className="w-full md:w-[360px] bg-slate-950/50 border-r border-slate-800/80 p-6 flex flex-col justify-between overflow-y-auto select-none gap-6">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-extrabold tracking-tight text-white font-heading">Statement Designer</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Customizer Sandbox</p>
+                  </div>
+                  <span className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    PRO v1.5
+                  </span>
+                </div>
+
+                <div className="space-y-4 text-xs font-semibold text-slate-300">
+                  {/* Theme Switcher */}
+                  <div>
+                    <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-2">Select Theme Template</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: "classic", label: "Classic Navy" },
+                        { id: "midnight", label: "Midnight Luxe" },
+                        { id: "sunset", label: "Vibrant Sunset" },
+                        { id: "minimalist", label: "Minimal Clean" }
+                      ].map(theme => (
+                        <button
+                          key={theme.id}
+                          type="button"
+                          onClick={() => setActiveTemplate(theme.id)}
+                          className={`px-3 py-2 rounded-xl text-[10px] font-bold text-center transition-all cursor-pointer border ${
+                            activeTemplate === theme.id 
+                              ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/10" 
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          {theme.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Company Branding Input */}
+                  <div>
+                    <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-1.5">Company Brand Name</label>
+                    <input
+                      type="text"
+                      value={previewCompanyName}
+                      onChange={(e) => setPreviewCompanyName(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-600 rounded-xl px-3 py-2 text-xs outline-none text-white font-semibold transition-colors"
+                      placeholder="e.g. Acme Corp"
+                    />
+                  </div>
+
+                  {/* Logo URL Input */}
+                  <div>
+                    <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-1.5">Workspace Logo URL</label>
+                    <input
+                      type="text"
+                      value={previewLogoUrl}
+                      onChange={(e) => setPreviewLogoUrl(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-600 rounded-xl px-3 py-2 text-xs outline-none text-white font-semibold transition-colors"
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+
+                  {/* Currency Picker */}
+                  <div>
+                    <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-1.5">Base Currency Override</label>
+                    <select
+                      value={previewCurrency}
+                      onChange={(e) => setPreviewCurrency(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-600 rounded-xl px-3 py-2 text-xs outline-none text-white font-bold cursor-pointer"
+                    >
+                      <option value="INR">INR (₹)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                    </select>
+                  </div>
+
+                  {/* Footer message */}
+                  <div>
+                    <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-1.5">Custom Footer Message</label>
+                    <textarea
+                      rows="2"
+                      value={previewFooter}
+                      onChange={(e) => setPreviewFooter(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-600 rounded-xl px-3 py-1.5 text-xs outline-none text-white font-semibold transition-colors resize-none"
+                    />
+                  </div>
+
+                  {/* Toggles */}
+                  <div className="space-y-2 pt-2 border-t border-slate-800/60">
+                    <label className="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={previewShowTax}
+                        onChange={(e) => setPreviewShowTax(e.target.checked)}
+                        className="rounded border-slate-850 text-indigo-600 bg-slate-900 focus:ring-indigo-600"
+                      />
+                      <span className="text-[11px] font-bold">Include Tax Computation</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={previewShowNotes}
+                        onChange={(e) => setPreviewShowNotes(e.target.checked)}
+                        className="rounded border-slate-850 text-indigo-600 bg-slate-900 focus:ring-indigo-600"
+                      />
+                      <span className="text-[11px] font-bold">Include Terms & Notes</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* PDF Print Actions */}
+              <div className="space-y-2.5 pt-4 border-t border-slate-800/80">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewScale(prev => Math.max(0.6, prev - 0.05))}
+                    className="flex-1 bg-slate-900 border border-slate-800 hover:bg-slate-850 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-colors text-[10px] font-black uppercase cursor-pointer"
+                  >
+                    Zoom Out
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewScale(prev => Math.min(1.2, prev + 0.05))}
+                    className="flex-1 bg-slate-900 border border-slate-800 hover:bg-slate-850 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-colors text-[10px] font-black uppercase cursor-pointer"
+                  >
+                    Zoom In
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleCustomGeneratePDF(
+                    selectedInvoiceForPreview,
+                    activeTemplate,
+                    previewCompanyName,
+                    previewLogoUrl,
+                    previewFooter,
+                    previewShowTax,
+                    previewShowNotes,
+                    previewCurrency
+                  )}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px] font-bold">print</span>
+                  Print & Export PDF
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPreviewModalOpen(false);
+                    setSelectedInvoiceForPreview(null);
+                  }}
+                  className="w-full bg-slate-900 border border-slate-800 hover:bg-slate-850 text-slate-400 hover:text-slate-200 font-black text-xs py-2.5 rounded-xl transition-all cursor-pointer"
+                >
+                  Close Designer
+                </button>
+              </div>
+            </div>
+
+            {/* Right Live Preview Canvas */}
+            <div className="flex-1 bg-slate-950 p-8 overflow-auto flex items-start justify-center relative">
+              <div 
+                className="transition-transform duration-200 shadow-2xl origin-top"
+                style={{ transform: `scale(${previewScale})` }}
+              >
+                {/* Visual rendering matching the printed templates in real-time */}
+                {(() => {
+                  const inv = selectedInvoiceForPreview;
+                  const matchedClient = clients.find(c => c.company === inv.client);
+                  const subtotal = inv.items?.reduce((acc, it) => acc + (it.qty * it.price), 0) || inv.amount;
+                  const discPct = inv.discount || 0;
+                  const discountVal = Math.round(subtotal * (discPct / 100));
+                  const taxPct = inv.taxRate || 18;
+                  const taxVal = previewShowTax ? Math.round((subtotal - discountVal) * (taxPct / 100)) : 0;
+                  const finalAmount = Math.max(0, subtotal - discountVal + taxVal);
+                  const currencySym = previewCurrency === "USD" ? "$" : previewCurrency === "EUR" ? "€" : "₹";
+
+                  // Dynamic theme classes
+                  let boxClass = "";
+                  let thClass = "";
+                  let tdClass = "";
+                  let accentTextClass = "";
+                  let labelClass = "";
+                  let notesClass = "";
+                  let headerBorderClass = "";
+
+                  if (activeTemplate === "midnight") {
+                    boxClass = "bg-slate-900 border border-slate-800 text-slate-100 p-8 rounded-3xl max-w-[700px] w-[700px] min-h-[850px] flex flex-col justify-between";
+                    thClass = "bg-slate-850 text-slate-400 font-bold uppercase text-[9px] p-3 text-left border-b border-slate-800";
+                    tdClass = "p-3.5 border-b border-slate-800/60 text-xs text-slate-300";
+                    accentTextClass = "text-indigo-400";
+                    labelClass = "text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1";
+                    notesClass = "mt-8 p-4 bg-slate-855 rounded-2xl border-l-4 border-indigo-500 text-slate-400 text-xs";
+                    headerBorderClass = "border-b-2 border-indigo-500 pb-5 mb-6";
+                  } else if (activeTemplate === "sunset") {
+                    boxClass = "bg-amber-50/10 border border-amber-900/20 text-slate-900 p-8 rounded-[20px] max-w-[700px] w-[700px] min-h-[850px] flex flex-col justify-between bg-white";
+                    thClass = "bg-amber-50 text-amber-900/80 font-bold uppercase text-[9px] p-3 text-left border-b border-amber-200/50";
+                    tdClass = "p-3.5 border-b border-slate-100 text-xs text-slate-700";
+                    accentTextClass = "text-orange-600";
+                    labelClass = "text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1";
+                    notesClass = "mt-8 p-4 bg-amber-50/30 rounded-xl border-l-4 border-orange-500 text-slate-600 text-xs";
+                    headerBorderClass = "border-b-4 border-orange-500 pb-4 mb-6";
+                  } else if (activeTemplate === "minimalist") {
+                    boxClass = "bg-white text-slate-900 p-8 max-w-[700px] w-[700px] min-h-[850px] flex flex-col justify-between border border-slate-200";
+                    thClass = "border-b border-slate-900 text-slate-900 font-bold uppercase text-[9px] p-3 text-left";
+                    tdClass = "p-3 border-b border-slate-100 text-xs text-slate-800";
+                    accentTextClass = "text-slate-950 font-black";
+                    labelClass = "text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1";
+                    notesClass = "mt-8 text-slate-500 text-xs line-height-relaxed";
+                    headerBorderClass = "border-b border-slate-200 pb-5 mb-8";
+                  } else {
+                    // Classic Navy
+                    boxClass = "bg-white text-slate-800 p-8 rounded-2xl max-w-[700px] w-[700px] min-h-[850px] flex flex-col justify-between border border-slate-200 shadow-sm";
+                    thClass = "bg-slate-50 text-slate-500 font-bold uppercase text-[9px] p-3 text-left border-b border-slate-200";
+                    tdClass = "p-3.5 border-b border-slate-100 text-xs text-slate-700";
+                    accentTextClass = "text-indigo-600";
+                    labelClass = "text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1";
+                    notesClass = "mt-8 p-4 bg-slate-50 rounded-xl border-l-4 border-indigo-600 text-slate-600 text-xs";
+                    headerBorderClass = "border-b-2 border-indigo-600 pb-4 mb-6";
+                  }
+
+                  return (
+                    <div className={boxClass}>
+                      <div>
+                        {/* Header Row */}
+                        <div className={`flex justify-between items-center ${headerBorderClass}`}>
+                          <div>
+                            {previewLogoUrl ? (
+                              <img src={previewLogoUrl} alt="Logo" className="max-h-10 rounded-lg mb-2 block" />
+                            ) : null}
+                            <div className="text-lg font-black tracking-tight text-slate-900">{previewCompanyName}</div>
+                            <div className="text-[9px] text-slate-400 font-black tracking-widest uppercase mt-0.5">Cryptographic Workspace Ledger</div>
+                          </div>
+                          <div className={`text-2xl font-black tracking-wider uppercase ${accentTextClass}`}>Invoice</div>
+                        </div>
+
+                        {/* Metadata Row */}
+                        <div className="grid grid-cols-2 gap-4 mb-8 text-xs">
+                          <div>
+                            <div className={labelClass}>Bill To:</div>
+                            <div className="font-extrabold text-slate-900 text-sm">{inv.client}</div>
+                            {matchedClient ? (
+                              <div className="mt-1 text-slate-500 font-medium leading-relaxed">
+                                GSTIN: {matchedClient.taxId || "Unregistered"}<br />
+                                Address: {matchedClient.address || "Local Entity"}
+                              </div>
+                            ) : (
+                              <div className="mt-1 text-slate-400 italic">Isolated Client Entity</div>
+                            )}
+                          </div>
+                          <div className="text-right text-slate-500 space-y-1 font-medium">
+                            <div><strong>Reference:</strong> <span className="font-extrabold text-slate-900">{inv.id}</span></div>
+                            <div><strong>Issue Date:</strong> {inv.date}</div>
+                            <div><strong>Due Date:</strong> {inv.dueDate}</div>
+                            <div><strong>Status:</strong> <span className={`uppercase font-black text-[9px] tracking-wider px-1.5 py-0.5 rounded ${
+                              inv.status === "paid" ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
+                            }`}>{inv.status}</span></div>
+                          </div>
+                        </div>
+
+                        {/* Items Table */}
+                        <div className="w-full">
+                          <div className="grid grid-cols-12 select-none">
+                            <span className={`${thClass} col-span-6`}>Description</span>
+                            <span className={`${thClass} col-span-2 text-center`}>Qty</span>
+                            <span className={`${thClass} col-span-2 text-right`}>Rate</span>
+                            <span className={`${thClass} col-span-2 text-right`}>Total</span>
+                          </div>
+                          <div className="divide-y divide-slate-100">
+                            {inv.items?.map((item, idx) => (
+                              <div key={idx} className="grid grid-cols-12 items-center">
+                                <span className={`${tdClass} col-span-6 font-bold text-slate-900`}>{item.desc}</span>
+                                <span className={`${tdClass} col-span-2 text-center font-medium`}>{item.qty}</span>
+                                <span className={`${tdClass} col-span-2 text-right font-medium`}>{currencySym}{item.price.toLocaleString()}</span>
+                                <span className={`${tdClass} col-span-2 text-right font-extrabold text-slate-900`}>{currencySym}{(item.qty * item.price).toLocaleString()}</span>
+                              </div>
+                            )) || (
+                              <div className="p-4 text-center text-slate-400 italic text-xs">Standard flat rate billing.</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Totals Section */}
+                        <div className="flex justify-end mt-6">
+                          <div className="w-72 space-y-2.5 text-xs font-semibold text-slate-600">
+                            <div className="flex justify-between">
+                              <span>Subtotal</span>
+                              <span className="text-slate-900 font-extrabold">{currencySym}{subtotal.toLocaleString()}</span>
+                            </div>
+                            {discountVal > 0 && (
+                              <div className="flex justify-between text-rose-600">
+                                <span>Discount ({discPct}%)</span>
+                                <span>- {currencySym}{discountVal.toLocaleString()}</span>
+                              </div>
+                            )}
+                            {taxVal > 0 && (
+                              <div className="flex justify-between">
+                                <span>Tax ({taxPct}%)</span>
+                                <span className="text-slate-900 font-extrabold">+ {currencySym}{taxVal.toLocaleString()}</span>
+                              </div>
+                            )}
+                            <div className={`flex justify-between pt-3 border-t border-slate-200 text-sm font-black ${accentTextClass}`}>
+                              <span>Amount Due</span>
+                              <span className="text-base font-extrabold">{currencySym}{finalAmount.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Notes Section */}
+                        {previewShowNotes && inv.notes ? (
+                          <div className={notesClass}>
+                            <div className="font-bold text-[9px] uppercase tracking-wider text-slate-400 mb-1 select-none">Terms & Conditions / Bank Instructions</div>
+                            <div>{inv.notes}</div>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Footer Message */}
+                      <div className="mt-12 pt-4 border-t border-slate-100 text-center text-[9px] font-bold text-slate-400 tracking-wider">
+                        {previewFooter}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
 

@@ -43,6 +43,161 @@ const IntegrationsTab = ({
   ]);
 
 
+  const [selectedWebhookEvent, setSelectedWebhookEvent] = useState("payment_intent.succeeded");
+  const [simulatedPayload, setSimulatedPayload] = useState("");
+  const [dispatchLogs, setDispatchLogs] = useState([]);
+  const [isDispatching, setIsDispatching] = useState(false);
+
+  useEffect(() => {
+    let payloadObj = {};
+    const mockId = Math.random().toString(36).substring(2, 10);
+    
+    if (selectedWebhookEvent === "payment_intent.succeeded") {
+      payloadObj = {
+        id: `evt_test_${mockId}`,
+        object: "event",
+        api_version: "2023-10-16",
+        created: Math.floor(Date.now() / 1000),
+        type: "payment_intent.succeeded",
+        data: {
+          object: {
+            id: `pi_${mockId}`,
+            object: "payment_intent",
+            amount: 1500000,
+            currency: "inr",
+            status: "succeeded",
+            payment_method: `pm_test_${mockId}`,
+            receipt_email: "finance@pixelstudio.com",
+            metadata: {
+              invoice_id: "INV-2026-004",
+              tenant_id: user?.tenantId || "org_mock"
+            }
+          }
+        }
+      };
+    } else if (selectedWebhookEvent === "payment_intent.payment_failed") {
+      payloadObj = {
+        id: `evt_test_${mockId}`,
+        object: "event",
+        api_version: "2023-10-16",
+        created: Math.floor(Date.now() / 1000),
+        type: "payment_intent.payment_failed",
+        data: {
+          object: {
+            id: `pi_${mockId}`,
+            object: "payment_intent",
+            amount: 500000,
+            currency: "inr",
+            status: "requires_payment_method",
+            last_payment_error: {
+              code: "card_declined",
+              decline_code: "insufficient_funds",
+              message: "The card has insufficient funds to complete this transaction."
+            },
+            metadata: {
+              invoice_id: "INV-2026-002",
+              tenant_id: user?.tenantId || "org_mock"
+            }
+          }
+        }
+      };
+    } else if (selectedWebhookEvent === "invoice.sent") {
+      payloadObj = {
+        id: `evt_test_${mockId}`,
+        object: "event",
+        api_version: "2023-10-16",
+        created: Math.floor(Date.now() / 1000),
+        type: "invoice.sent",
+        data: {
+          object: {
+            id: `inv_test_${mockId}`,
+            object: "invoice",
+            amount_due: 1250000,
+            customer_email: "client@workspacemail.com",
+            customer_name: "Pixel Creative Labs",
+            number: "INV-2026-009",
+            status: "open",
+            due_date: "2026-06-30"
+          }
+        }
+      };
+    } else if (selectedWebhookEvent === "invoice.voided") {
+      payloadObj = {
+        id: `evt_test_${mockId}`,
+        object: "event",
+        api_version: "2023-10-16",
+        created: Math.floor(Date.now() / 1000),
+        type: "invoice.voided",
+        data: {
+          object: {
+            id: `inv_test_${mockId}`,
+            object: "invoice",
+            amount_due: 0,
+            number: "INV-2026-001",
+            status: "void"
+          }
+        }
+      };
+    }
+    setSimulatedPayload(JSON.stringify(payloadObj, null, 2));
+  }, [selectedWebhookEvent, user]);
+
+  const handleTriggerWebhookDispatch = async () => {
+    if (!webhookUrl || !webhookUrl.startsWith("http")) {
+      showToast("Please specify a valid destination HTTP/HTTPS endpoint URL.", "error");
+      return;
+    }
+    
+    setIsDispatching(true);
+    const dispatchTime = new Date().toLocaleTimeString();
+    
+    try {
+      const parsed = JSON.parse(simulatedPayload);
+      
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-BillNest-Signature": `t=${Math.floor(Date.now() / 1000)},v1=${Math.random().toString(36).substring(2, 32)}`
+        },
+        body: JSON.stringify(parsed)
+      });
+      
+      const responseText = await response.text().catch(() => "");
+      const newLog = {
+        id: `log_${Date.now()}`,
+        time: dispatchTime,
+        event: selectedWebhookEvent,
+        url: webhookUrl,
+        status: response.status,
+        statusText: response.statusText,
+        responseText: responseText.substring(0, 150) || "(No response body)"
+      };
+      
+      setDispatchLogs(prev => [newLog, ...prev]);
+      if (response.ok) {
+        showToast("Webhook test dispatch successfully delivered!", "success");
+      } else {
+        showToast(`Webhook endpoint responded with status ${response.status}`, "warning");
+      }
+    } catch (err) {
+      console.error(err);
+      const newLog = {
+        id: `log_${Date.now()}`,
+        time: dispatchTime,
+        event: selectedWebhookEvent,
+        url: webhookUrl,
+        status: "NET_ERR",
+        statusText: "Connection Refused / Timeout",
+        responseText: err.message || "Failed to connect to destination address."
+      };
+      setDispatchLogs(prev => [newLog, ...prev]);
+      showToast("Webhook delivery failed: Network target unreachable.", "error");
+    } finally {
+      setIsDispatching(false);
+    }
+  };
+
   const handleCreateApiKeySubmit = (e) => {
     e.preventDefault();
     if (!newKeyLabel) return;
@@ -318,6 +473,124 @@ const IntegrationsTab = ({
 
         </div>
 
+      </div>
+
+      {/* Webhook Event Simulator & Dispatch Sandbox */}
+      <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-2xl mt-6 space-y-6">
+        <div>
+          <h4 className="font-heading text-base font-black text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+            <span className="material-symbols-outlined text-[20px] animate-pulse text-indigo-400">developer_board</span>
+            Webhook Event Simulator & Dispatch Sandbox
+          </h4>
+          <p className="text-[10px] text-slate-400 font-semibold leading-relaxed mt-1">
+            Dispatch mock crypto-signed Stripe event payloads directly to your destination endpoint. Great for debugging local tunnels (e.g. ngrok) or Zapier configurations.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left panel: configurations */}
+          <div className="lg:col-span-5 space-y-4">
+            <div>
+              <label className="block text-slate-400 text-[10px] font-black uppercase tracking-wider mb-1.5">Simulate Event Type</label>
+              <select
+                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl p-2.5 text-xs font-bold outline-none cursor-pointer"
+                value={selectedWebhookEvent}
+                onChange={(e) => setSelectedWebhookEvent(e.target.value)}
+              >
+                <option value="payment_intent.succeeded">payment_intent.succeeded</option>
+                <option value="payment_intent.payment_failed">payment_intent.payment_failed</option>
+                <option value="invoice.sent">invoice.sent</option>
+                <option value="invoice.voided">invoice.voided</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-[10px] font-black uppercase tracking-wider mb-1.5">Destination URL</label>
+              <div className="flex bg-slate-850 rounded-xl border border-slate-700 overflow-hidden p-1.5">
+                <input
+                  type="text"
+                  placeholder="https://your-server.com/stripe-webhook"
+                  className="flex-1 bg-transparent text-xs font-mono font-semibold px-2 py-1 outline-none text-slate-200"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleTriggerWebhookDispatch}
+                disabled={isDispatching}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all shadow-lg hover:shadow-indigo-700/30 flex items-center justify-center gap-2 cursor-pointer outline-none"
+              >
+                {isDispatching ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Dispatching Payload...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">send</span>
+                    <span>Trigger Webhook Test</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Simulated request headers insight */}
+            <div className="bg-slate-850 p-4 border border-slate-800 rounded-2xl space-y-2 text-[10px] text-slate-400 font-semibold leading-relaxed">
+              <span className="block text-[9px] font-black text-indigo-400 uppercase tracking-widest">HEADERS INJECTED</span>
+              <div className="space-y-1 font-mono">
+                <div>Content-Type: <span className="text-emerald-400">application/json</span></div>
+                <div>User-Agent: <span className="text-slate-300">BillNest-Webhook-Simulator/v1.0</span></div>
+                <div>X-BillNest-Signature: <span className="text-amber-500">t=171739...,v1=sig_hash...</span></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right panel: payload JSON editor & response feed */}
+          <div className="lg:col-span-7 flex flex-col gap-4">
+            <div className="flex-1 bg-slate-950 p-4 border border-slate-800 rounded-2xl font-mono text-[11px] overflow-hidden flex flex-col min-h-[220px]">
+              <span className="block text-[9px] text-slate-500 font-black uppercase tracking-wider mb-2">Simulated JSON Body</span>
+              <textarea
+                className="flex-1 bg-transparent text-emerald-400 outline-none resize-none font-semibold leading-relaxed w-full min-h-[160px]"
+                value={simulatedPayload}
+                onChange={(e) => setSimulatedPayload(e.target.value)}
+              />
+            </div>
+
+            {/* Sandbox dispatch logs terminal */}
+            <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl max-h-[160px] overflow-y-auto font-mono text-[10px] space-y-2 text-slate-400">
+              <span className="block text-[9px] text-slate-500 font-black uppercase tracking-wider">Sandbox Dispatch Logs</span>
+              
+              {dispatchLogs.length > 0 ? (
+                dispatchLogs.map((log) => {
+                  const isErr = log.status === "NET_ERR" || log.status >= 400;
+                  return (
+                    <div key={log.id} className="border-b border-slate-900 pb-2 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-slate-200">{log.time} - {log.event}</span>
+                        <span className={`px-1.5 py-0.5 rounded font-black text-[9px] ${
+                          isErr ? "bg-rose-950 text-rose-400 border border-rose-900/50" : "bg-emerald-950 text-emerald-400 border border-emerald-900/50"
+                        }`}>{log.status} {log.statusText}</span>
+                      </div>
+                      <div className="text-[9px] truncate text-slate-500">Destination: {log.url}</div>
+                      <div className="text-[9px] text-slate-400 bg-slate-900 p-1.5 rounded truncate">Response: {log.responseText}</div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-4 text-slate-600 italic">
+                  No active logs in this session. Trigger a test dispatch to monitor response feedback.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>

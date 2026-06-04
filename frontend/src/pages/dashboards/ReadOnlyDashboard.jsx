@@ -34,44 +34,108 @@ const ReadOnlyDashboard = () => {
   };
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
 
-  const [clients, setClients] = useState([
-    { id: "c1", name: "ABC Restaurant", company: "ABC Food & Beverages", email: "owner@abcrestaurant.com", phone: "+91 98765 43210", taxId: "24ABCDE1234F1Z5", address: "Surat, Gujarat", currency: "INR", notes: "Prefers UPI payments" },
-    { id: "c2", name: "Pixel Studio", company: "Pixel Creative Labs", email: "finance@pixelstudio.com", phone: "+91 99988 77766", taxId: "27PIXEL7788A1Z9", address: "Mumbai, Maharashtra", currency: "INR", notes: "Monthly billing cycle" },
-    { id: "c3", name: "Nova Software Inc", company: "Nova Tech Ltd", email: "billing@novatech.com", phone: "+1 (555) 234-5678", taxId: "US9988223", address: "Austin, Texas", currency: "USD", notes: "Stripe recurring billing active" }
-  ]);
+  const safeSaveToLocalStorage = (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error(`Local storage write failed for key "${key}":`, error);
+    }
+  };
 
-  const [invoices, setInvoices] = useState([
-    { id: "INV-RO-1001", client: "ABC Food & Beverages", amount: 15000, date: "2026-05-29", dueDate: "2026-06-12", status: "sent", itemsList: [{ desc: "UI Design Retainer", qty: 1, price: 12000 }, { desc: "Hosting Retainer", qty: 1, price: 3000 }] },
-    { id: "INV-RO-1002", client: "Pixel Creative Labs", amount: 25000, date: "2026-05-28", dueDate: "2026-06-10", status: "draft", itemsList: [{ desc: "Website Retainer", qty: 1, price: 25000 }] },
-    { id: "INV-RO-1003", client: "Nova Tech Ltd", amount: 8000, date: "2026-05-25", dueDate: "2026-06-05", status: "paid", itemsList: [{ desc: "Technical Support Support", qty: 8, price: 1000 }] }
-  ]);
+  const [clients, setClients] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_clients`);
+      return saved ? JSON.parse(saved) : [
+        { id: "c1", name: "ABC Restaurant", company: "ABC Food & Beverages", email: "owner@abcrestaurant.com", phone: "+91 98765 43210", taxId: "24ABCDE1234F1Z5", address: "Surat, Gujarat", currency: "INR", notes: "Prefers UPI payments" },
+        { id: "c2", name: "Pixel Studio", company: "Pixel Creative Labs", email: "finance@pixelstudio.com", phone: "+91 99988 77766", taxId: "27PIXEL7788A1Z9", address: "Mumbai, Maharashtra", currency: "INR", notes: "Monthly billing cycle" },
+        { id: "c3", name: "Nova Software Inc", company: "Nova Tech Ltd", email: "billing@novatech.com", phone: "+1 (555) 234-5678", taxId: "US9988223", address: "Austin, Texas", currency: "USD", notes: "Stripe recurring billing active" }
+      ];
+    } catch {
+      return [];
+    }
+  });
 
-  const [payments, setPayments] = useState([
-    { id: "TXN-RO-9001", invoice: "INV-RO-1003", client: "Nova Tech Ltd", method: "Stripe Card", amount: 8000, status: "successful", date: "2026-05-25" },
-    { id: "TXN-RO-9002", invoice: "INV-RO-1004", client: "Pixel Studio", method: "Stripe Card", amount: 15000, status: "failed", date: "2026-05-20" }
-  ]);
+  const [invoices, setInvoices] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_invoices`);
+      return saved ? JSON.parse(saved) : [
+        { id: "INV-1024", client: "ABC Food & Beverages", amount: 34220, date: "2026-05-28", dueDate: "2026-06-10", status: "sent", items: [{ desc: "Website Design", qty: 1, price: 25000 }, { desc: "Hosting Support", qty: 12, price: 500 }] },
+        { id: "INV-1023", client: "Pixel Creative Labs", amount: 15000, date: "2026-05-20", dueDate: "2025-05-30", status: "paid", items: [{ desc: "Logo Design Pro Package", qty: 1, price: 15000 }] }
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  const [payments, setPayments] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_payments`);
+      return saved ? JSON.parse(saved) : [
+        { id: "TXN-90241", invoice: "INV-1023", client: "Pixel Creative Labs", method: "Stripe Card", amount: 15000, status: "succeeded", date: "2026-05-20" },
+        { id: "TXN-90240", invoice: "INV-1022", client: "Nova Software Inc", method: "Stripe Card", amount: 5000, status: "failed", date: "2026-05-15" }
+      ];
+    } catch {
+      return [];
+    }
+  });
 
   const [notifications, setNotifications] = useState([
-    { id: "n1", type: "client_update", title: "Client Update", message: "ABC Restaurant viewed Invoice INV-RO-1001.", time: "10 mins ago", read: false },
-    { id: "n2", type: "payment_success", title: "Payment Success", message: "Invoice INV-RO-1003 was marked as paid.", time: "2 hours ago", read: false },
+    { id: "n1", type: "client_update", title: "Client Update", message: "ABC Restaurant viewed Invoice INV-1024.", time: "10 mins ago", read: false },
+    { id: "n2", type: "payment_success", title: "Payment Success", message: "Invoice INV-1023 was marked as paid.", time: "2 hours ago", read: false },
     { id: "n3", type: "subscription_renewal", title: "Subscription Renewed", message: "Nova Software Inc payment processed successfully.", time: "1 day ago", read: true }
   ]);
+
+  // Persist back changes to make it behave reactive and cross-functional
+  useEffect(() => {
+    if (user?.email) {
+      safeSaveToLocalStorage(`workspace_${user.email}_clients`, JSON.stringify(clients));
+    }
+  }, [clients, user]);
+
+  useEffect(() => {
+    if (user?.email) {
+      safeSaveToLocalStorage(`workspace_${user.email}_invoices`, JSON.stringify(invoices));
+    }
+  }, [invoices, user]);
+
+  useEffect(() => {
+    if (user?.email) {
+      safeSaveToLocalStorage(`workspace_${user.email}_payments`, JSON.stringify(payments));
+    }
+  }, [payments, user]);
 
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
 
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-45 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Layout */}
-      <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col p-5 bg-white border-r border-slate-100 z-50">
-        <div className="mb-6 flex items-center gap-3 px-2">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-100">
-            <span className="material-symbols-outlined text-[22px]">visibility</span>
+      <aside className={`fixed left-0 top-0 h-screen w-64 flex flex-col p-5 bg-white border-r border-slate-100 z-50 transition-transform duration-300 md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="mb-6 flex items-center justify-between px-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-100">
+              <span className="material-symbols-outlined text-[22px]">visibility</span>
+            </div>
+            <div>
+              <h1 className="font-extrabold text-slate-900 text-base leading-tight truncate max-w-[120px]">{user?.organization?.name || "Workspace"}</h1>
+              <p className="text-[10px] text-slate-400 font-black tracking-wider uppercase mt-0.5">Read-Only Console</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-extrabold text-slate-900 text-base leading-tight truncate max-w-[150px]">{user?.organization?.name || "Workspace"}</h1>
-            <p className="text-[10px] text-slate-400 font-black tracking-wider uppercase mt-0.5">Read-Only Console</p>
-          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden text-slate-400 hover:text-slate-600 hover:bg-slate-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
@@ -90,7 +154,10 @@ const ReadOnlyDashboard = () => {
             return (
               <button
                 key={menu.id}
-                onClick={() => handlePageChange(menu.id)}
+                onClick={() => {
+                  handlePageChange(menu.id);
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-150 text-left cursor-pointer text-xs ${
                   isActive
                     ? "bg-indigo-50 text-indigo-600 shadow-sm"
@@ -106,7 +173,10 @@ const ReadOnlyDashboard = () => {
 
         <div className="mt-auto pt-4 border-t border-slate-100 flex items-center gap-3">
           <button
-            onClick={() => handlePageChange("profile")}
+            onClick={() => {
+              handlePageChange("profile");
+              setIsSidebarOpen(false);
+            }}
             className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity text-left outline-none cursor-pointer"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 border border-indigo-200/50 shadow-sm flex items-center justify-center font-extrabold text-white text-sm select-none flex-shrink-0">
@@ -121,11 +191,17 @@ const ReadOnlyDashboard = () => {
       </aside>
 
       {/* Main Container */}
-      <main className="ml-64 flex-1 min-h-screen flex flex-col">
+      <main className="md:ml-64 ml-0 flex-1 min-h-screen flex flex-col min-w-0">
 
         {/* Global sticky Header */}
-        <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-8 bg-white/80 backdrop-blur-md border-b border-slate-100">
-          <div className="flex items-center">
+        <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-4 md:px-8 bg-white/80 backdrop-blur-md border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-950 rounded-xl hover:bg-slate-100/80 transition-all cursor-pointer outline-none"
+            >
+              <span className="material-symbols-outlined text-[22px]">menu</span>
+            </button>
             <span className="text-sm font-bold text-slate-700 capitalize">
               {activePage.replace("-", " ")}
             </span>
@@ -240,6 +316,9 @@ const ReadOnlyDashboard = () => {
           {activePage === "invoices" && (
             <ReadOnlyInvoicesTab
               invoices={invoices}
+              setInvoices={setInvoices}
+              payments={payments}
+              setPayments={setPayments}
               user={user}
               showToast={showToast}
             />
@@ -252,7 +331,10 @@ const ReadOnlyDashboard = () => {
           )}
 
           {activePage === "payments" && (
-            <ReadOnlyPaymentsTab />
+            <ReadOnlyPaymentsTab
+              payments={payments}
+              user={user}
+            />
           )}
 
           {activePage === "reports" && (

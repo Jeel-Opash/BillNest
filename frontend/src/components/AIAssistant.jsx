@@ -74,8 +74,8 @@ const AIAssistant = ({
 
         // Try to match with an existing client company
         const matchedClient = clients.find(
-          c => c.company.toLowerCase().includes(clientNameRaw.toLowerCase()) || 
-               c.name.toLowerCase().includes(clientNameRaw.toLowerCase())
+          c => c.company.toLowerCase().includes(clientNameRaw.toLowerCase()) ||
+            c.name.toLowerCase().includes(clientNameRaw.toLowerCase())
         );
 
         const finalClientName = matchedClient ? matchedClient.company : clientNameRaw;
@@ -134,10 +134,10 @@ const AIAssistant = ({
 
       // 4. UNPAID / OUTSTANDING / OVERDUE
       if (cleanQuery.includes("unpaid") || cleanRegexMatch(cleanQuery, ["pending", "outstanding", "overdue", "owe"])) {
-        const outstandingInvoices = invoices.filter(inv => 
+        const outstandingInvoices = invoices.filter(inv =>
           ["sent", "pending", "overdue"].includes(inv.status?.toLowerCase())
         );
-        
+
         const outstandingTotal = outstandingInvoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
 
         // Find client with highest outstanding
@@ -156,7 +156,7 @@ const AIAssistant = ({
         });
 
         let responseText = `You have **${outstandingInvoices.length} outstanding invoices** totaling **${formatCurrency(outstandingTotal)}**:\n\n`;
-        
+
         if (worstDebtor) {
           responseText += `• **Highest Outstanding:** ${worstDebtor} owes ${formatCurrency(maxDebt)}.\n\n`;
         }
@@ -226,7 +226,7 @@ const AIAssistant = ({
         <span className="material-symbols-outlined text-[26px]">
           {isOpen ? "close" : "smart_toy"}
         </span>
-        
+
         {/* Pulsing indicator */}
         {!isOpen && (
           <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white">
@@ -238,7 +238,7 @@ const AIAssistant = ({
       {/* Chat Window */}
       {isOpen && (
         <div className="absolute bottom-20 right-0 w-[360px] h-[480px] bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden flex flex-col z-50 animate-in slide-in-from-bottom-5 duration-200">
-          
+
           {/* Header */}
           <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white px-5 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -253,7 +253,7 @@ const AIAssistant = ({
                 </p>
               </div>
             </div>
-            
+
             <button
               onClick={() => setIsOpen(false)}
               className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
@@ -271,11 +271,10 @@ const AIAssistant = ({
               >
                 {/* Bubble */}
                 <div
-                  className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed font-semibold whitespace-pre-line shadow-[0_1px_2px_rgba(0,0,0,0.01)] ${
-                    msg.sender === "user"
+                  className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed font-semibold whitespace-pre-line shadow-[0_1px_2px_rgba(0,0,0,0.01)] ${msg.sender === "user"
                       ? "bg-indigo-600 text-white rounded-tr-none"
                       : "bg-white text-slate-800 border border-slate-100 rounded-tl-none"
-                  }`}
+                    }`}
                 >
                   {msg.text}
                 </div>
@@ -314,7 +313,6 @@ const AIAssistant = ({
             <div ref={chatEndRef} />
           </div>
 
-          {/* Footer Input */}
           <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-100 flex gap-2">
             <input
               type="text"

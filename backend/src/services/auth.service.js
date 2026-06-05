@@ -8,8 +8,7 @@ import sendEmail from "../utils/sendEmail.js";
 import JoinRequest from "../models/joinRequest.model.js";
 
 class AuthService {
-
-
+  static recentlyRotatedTokens = new Map();
 
   signAccessToken(user) {
     return jwt.sign(
@@ -115,6 +114,7 @@ class AuthService {
         username: user.username,
         email: user.email,
         role: user.role,
+        clientAccess: user.clientAccess || [],
         phone: user.phone,
         avatar: user.avatar,
         organization: user.organization,
@@ -164,6 +164,7 @@ class AuthService {
         username: user.username,
         email: user.email,
         role: user.role,
+        clientAccess: user.clientAccess || [],
         phone: user.phone,
         avatar: user.avatar,
         organization: user.organization,
@@ -171,14 +172,19 @@ class AuthService {
     };
   }
 
-
-
-
   async rotateTokens(receivedRefreshToken) {
     if (!receivedRefreshToken) {
       throw new Error("Refresh token is required");
     }
 
+    const now = Date.now();
+    const recentRotation = AuthService.recentlyRotatedTokens.get(receivedRefreshToken);
+    if (recentRotation && (now - recentRotation.timestamp < 10000)) {
+      return {
+        accessToken: recentRotation.accessToken,
+        refreshToken: recentRotation.refreshToken
+      };
+    }
 
     let decoded;
     try {
@@ -192,15 +198,11 @@ class AuthService {
       throw new Error("User not found");
     }
 
-
     if (!user.refreshTokens.includes(receivedRefreshToken)) {
-
-
       user.refreshTokens = [];
       await user.save();
       throw new Error("Security alert: Refresh token reuse detected. Log in again.");
     }
-
 
     user.refreshTokens = user.refreshTokens.filter(t => t !== receivedRefreshToken);
 
@@ -210,16 +212,25 @@ class AuthService {
     user.refreshTokens.push(newRefreshToken);
     await user.save();
 
+    AuthService.recentlyRotatedTokens.set(receivedRefreshToken, {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      timestamp: now
+    });
+
+    for (const [token, data] of AuthService.recentlyRotatedTokens.entries()) {
+      if (now - data.timestamp > 30000) {
+        AuthService.recentlyRotatedTokens.delete(token);
+      }
+    }
+
     return {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
     };
   }
 
-
-
-
-  async inviteTeammate({ email, role, invitedByUserId, organizationId }) {
+  async inviteTeammate({ email, role, clientAccess, invitedByUserId, organizationId }) {
     if (!email || !role) {
       throw new Error("Email and role are required");
     }
@@ -236,6 +247,7 @@ class AuthService {
       organization: organizationId,
       email,
       role,
+      clientAccess: clientAccess || [],
       token,
       invitedBy: invitedByUserId,
       expiresAt,
@@ -281,6 +293,7 @@ class AuthService {
     if (user) {
       user.organization = invitation.organization;
       user.role = invitation.role;
+      user.clientAccess = invitation.clientAccess || [];
       if (name) user.name = name;
       if (password) {
         user.password = await bcrypt.hash(password, 10);
@@ -294,6 +307,7 @@ class AuthService {
         email: invitation.email,
         password: hashedPassword,
         role: invitation.role,
+        clientAccess: invitation.clientAccess || [],
       });
     }
 
@@ -322,12 +336,13 @@ class AuthService {
 
 
 
-  async updateUserRole(userId, role) {
+  async updateUserRole(userId, role, clientAccess) {
     const user = await User.findById(userId).populate("organization");
     if (!user) {
       throw new Error("User not found");
     }
-    user.role = role;
+    if (role !== undefined) user.role = role;
+    if (clientAccess !== undefined) user.clientAccess = clientAccess;
     await user.save();
     
     const accessToken = this.signAccessToken(user);
@@ -342,6 +357,7 @@ class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        clientAccess: user.clientAccess || [],
         organization: user.organization
       },
       accessToken,
@@ -351,7 +367,7 @@ class AuthService {
 
   async getTeamMembers(organizationId) {
     return await User.find({ organization: organizationId })
-      .select("name email role status lastLoginAt lastLogin")
+      .select("name email role status clientAccess lastLoginAt lastLogin")
       .sort({ createdAt: 1 });
   }
 
@@ -366,9 +382,7 @@ class AuthService {
     }).select("name slug logo");
   }
 
-  async submitJoinRequest(userId, { organizationId, accessCode, role, message }) {
-    if (!role) throw new Error("Role is required");
-    
+  async submitJoinRequest(userId, { organizationId, accessCode, message }) {
     let org;
     if (accessCode) {
       org = await Organization.findOne({ accessCode: accessCode.trim().toUpperCase(), isActive: true });
@@ -392,7 +406,6 @@ class AuthService {
     return await JoinRequest.create({
       organization: org._id,
       user: userId,
-      role,
       message: message || ""
     });
   }
@@ -425,7 +438,7 @@ class AuthService {
       .sort({ updatedAt: -1 });
   }
 
-  async processJoinRequest(requestId, actedByUserId, { action, finalRole, notes }) {
+  async processJoinRequest(requestId, actedByUserId, { action, finalRole, clientAccess, notes }) {
     if (!["approved", "rejected"].includes(action)) {
       throw new Error("Invalid action. Must be approved or rejected.");
     }
@@ -451,6 +464,7 @@ class AuthService {
         targetUser.organization = request.organization;
         targetUser.tenantId = request.organization;
         targetUser.role = assignedRole;
+        targetUser.clientAccess = clientAccess || [];
         targetUser.status = "active";
         await targetUser.save();
       }

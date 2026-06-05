@@ -11,7 +11,6 @@ import MemberPaymentsTab from "./member/MemberPaymentsTab";
 import MemberActivityTab from "./member/MemberActivityTab";
 import MemberNotificationsTab from "./member/MemberNotificationsTab";
 import MemberProfileTab from "./member/MemberProfileTab";
-import AIAssistant from "../../components/AIAssistant";
 
 const MemberDashboard = () => {
   const { user, logout, showToast } = useAuth();
@@ -44,9 +43,9 @@ const MemberDashboard = () => {
   ]);
 
   const [invoices, setInvoices] = useState([
-    { id: "INV-MEMB-1001", client: "ABC Restaurant", amount: 15000, date: "2026-05-29", dueDate: "2026-06-12", status: "pending", itemsList: [{ desc: "UI Design Retainer", qty: 1, price: 12000 }, { desc: "Hosting Retainer", qty: 1, price: 3000 }] },
-    { id: "INV-MEMB-1002", client: "Pixel Studio", amount: 25000, date: "2026-05-28", dueDate: "2026-06-10", status: "draft", itemsList: [{ desc: "Website Retainer", qty: 1, price: 25000 }] },
-    { id: "INV-MEMB-1003", client: "Nova Software Inc", amount: 8000, date: "2026-05-25", dueDate: "2026-06-05", status: "paid", itemsList: [{ desc: "Technical Support Support", qty: 8, price: 1000 }] }
+    { id: "INV-MEMB-1001", client: "ABC Restaurant", amount: 15000, date: "2026-05-29", dueDate: "2026-06-12", status: "sent", items: [{ desc: "UI Design Retainer", qty: 1, price: 12000 }, { desc: "Hosting Retainer", qty: 1, price: 3000 }] },
+    { id: "INV-MEMB-1002", client: "Pixel Studio", amount: 25000, date: "2026-05-28", dueDate: "2026-06-10", status: "draft", items: [{ desc: "Website Retainer", qty: 1, price: 25000 }] },
+    { id: "INV-MEMB-1003", client: "Nova Software Inc", amount: 8000, date: "2026-05-25", dueDate: "2026-06-05", status: "paid", items: [{ desc: "Technical Support Support", qty: 8, price: 1000 }] }
   ]);
 
   const [payments, setPayments] = useState(() => {
@@ -84,13 +83,31 @@ const MemberDashboard = () => {
       date: new Date().toISOString().split("T")[0],
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       status: "draft",
-      itemsList: [{ desc: "AI Copilot Created Billing Line", qty: 1, price: Number(amount) }]
+      items: [{ desc: "AI Copilot Created Billing Line", qty: 1, price: Number(amount) }]
     };
     const updated = [newInv, ...invoices];
     setInvoices(updated);
     showToast(`Invoice draft ${nextId} created for ${clientName}!`, "success");
     navigate("/dashboard/invoices");
   };
+
+  const allowedClientAccessIds = user?.clientAccess?.map(a => a.clientId) || [];
+  const hasClientAccessLimits = user?.clientAccess && user.clientAccess.length > 0;
+
+  const filteredClients = clients.filter(c => {
+    if (!hasClientAccessLimits) return true;
+    return allowedClientAccessIds.includes(c.id) || allowedClientAccessIds.includes(c._id);
+  });
+
+  const filteredInvoices = invoices.filter(inv => {
+    if (!hasClientAccessLimits) return true;
+    return filteredClients.some(c => c.name === inv.client || c.company === inv.client);
+  });
+
+  const filteredPayments = payments.filter(p => {
+    if (!hasClientAccessLimits) return true;
+    return filteredClients.some(c => c.name === p.client || c.company === p.client);
+  });
 
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
@@ -284,8 +301,8 @@ const MemberDashboard = () => {
           {activePage === "dashboard" && (
             <MemberDashboardTab
               user={user}
-              clients={clients}
-              invoices={invoices}
+              clients={filteredClients}
+              invoices={filteredInvoices}
               handlePageChange={handlePageChange}
               showToast={showToast}
             />
@@ -293,18 +310,21 @@ const MemberDashboard = () => {
 
           {activePage === "clients" && (
             <MemberClientsTab
-              clients={clients}
+              clients={filteredClients}
               setClients={setClients}
-              invoices={invoices}
+              invoices={filteredInvoices}
               showToast={showToast}
+              user={user}
             />
           )}
 
           {activePage === "invoices" && (
             <MemberInvoicesTab
-              invoices={invoices}
+              invoices={filteredInvoices}
               setInvoices={setInvoices}
-              clients={clients}
+              clients={filteredClients}
+              payments={filteredPayments}
+              setPayments={setPayments}
               user={user}
               showToast={showToast}
             />
@@ -313,18 +333,19 @@ const MemberDashboard = () => {
           {activePage === "subscriptions" && (
             <MemberSubscriptionsTab
               user={user}
-              clients={clients}
-              payments={payments}
+              clients={filteredClients}
+              payments={filteredPayments}
               setPayments={setPayments}
               showToast={showToast}
             />
           )}
 
+
           {activePage === "payments" && (
             <MemberPaymentsTab 
-              payments={payments} 
+              payments={filteredPayments} 
               user={user}
-              invoices={invoices}
+              invoices={filteredInvoices}
             />
           )}
 
@@ -349,15 +370,6 @@ const MemberDashboard = () => {
 
         </div>
       </main>
-
-      <AIAssistant
-        user={user}
-        clients={clients}
-        invoices={invoices}
-        payments={payments}
-        onCreateDraftInvoice={handleCreateDraftInvoice}
-        showToast={showToast}
-      />
 
     </div>
   );

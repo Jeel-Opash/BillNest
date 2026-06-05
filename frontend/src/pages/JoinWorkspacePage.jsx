@@ -105,12 +105,12 @@ const JoinWorkspacePage = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-700 font-sans antialiased p-6 flex items-center justify-center">
       <div className="w-full max-w-2xl bg-white border border-slate-100 rounded-3xl shadow-[0_15px_40px_rgba(15,23,42,0.06)] overflow-hidden flex flex-col">
-        
+
         {/* Upper Header Branding */}
         <div className="bg-gradient-to-r from-indigo-600 to-violet-700 p-8 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/30 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none"></div>
-          
+
           <div className="flex items-center gap-3 mb-2">
             <span className="material-symbols-outlined text-[32px] bg-white/15 p-2 rounded-2xl">
               hub
@@ -129,22 +129,20 @@ const JoinWorkspacePage = () => {
         <div className="flex border-b border-slate-100 p-2 bg-slate-50/50">
           <button
             onClick={() => setActiveTab("join")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === "join"
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === "join"
                 ? "bg-white text-indigo-600 shadow-sm border border-slate-200/40"
                 : "text-slate-500 hover:text-slate-900"
-            }`}
+              }`}
           >
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
             Join Organization
           </button>
           <button
             onClick={() => setActiveTab("requests")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === "requests"
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === "requests"
                 ? "bg-white text-indigo-600 shadow-sm border border-slate-200/40"
                 : "text-slate-500 hover:text-slate-900"
-            }`}
+              }`}
           >
             <span className="material-symbols-outlined text-[18px]">list_alt</span>
             My Requests
@@ -333,7 +331,7 @@ const JoinWorkspacePage = () => {
                               {req.status}
                             </span>
                           </div>
-                          
+
                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1.5">
                             REQUESTED PRIVILEGE: <span className="text-slate-600">{req.role.toUpperCase()}</span>
                           </p>

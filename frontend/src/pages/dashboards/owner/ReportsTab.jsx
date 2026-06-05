@@ -266,13 +266,6 @@ const ReportsTab = ({
             PDF
           </button>
           <button
-            onClick={handleExportCSV}
-            className="px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-slate-50 hover:bg-slate-100 text-slate-700 transition-all cursor-pointer flex items-center gap-1 border border-slate-200"
-          >
-            <span className="material-symbols-outlined text-[14px]">csv</span>
-            CSV
-          </button>
-          <button
             onClick={handleExportExcel}
             className="px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer flex items-center gap-1"
           >

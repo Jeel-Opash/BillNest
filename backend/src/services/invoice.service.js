@@ -66,10 +66,25 @@ class InvoiceService {
     });
   }
 
-  async getInvoices(organizationId, query = {}) {
+  async getInvoices(organizationId, query = {}, allowedClientIds = null) {
     const filter = { organization: organizationId };
     if (query.status) filter.status = query.status;
-    if (query.client) filter.client = query.client;
+    
+    if (allowedClientIds !== null) {
+      if (query.client) {
+        const queryClientIdStr = query.client.toString();
+        const isAllowed = allowedClientIds.some(id => id.toString() === queryClientIdStr);
+        if (!isAllowed) {
+          return { invoices: [], total: 0, page: parseInt(query.page) || 1, pages: 0 };
+        }
+        filter.client = query.client;
+      } else {
+        filter.client = { $in: allowedClientIds };
+      }
+    } else if (query.client) {
+      filter.client = query.client;
+    }
+
     if (query.startDate && query.endDate) {
       filter.createdAt = { $gte: new Date(query.startDate), $lte: new Date(query.endDate) };
     }
@@ -191,8 +206,24 @@ class InvoiceService {
     });
   }
 
-  async exportCsvReport(organizationId, filters = {}) {
-    const { invoices } = await this.getInvoices(organizationId, { ...filters, limit: 10000 });
+  async sendInvoiceEmailDirect(invoice, client, recipientEmail) {
+    const pdfBuffer = await generateInvoicePdf(invoice, client);
+    const currency = invoice.currency || "INR";
+    const invoiceNumber = invoice.invoiceNumber || invoice.id || "INV-TEMP";
+    const totalAmount = invoice.total || invoice.totalAmount || 0;
+    const clientName = client.name || client.company || "Valued Client";
+    const dueDateStr = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : "N/A";
+
+    await sendEmail({
+      to: recipientEmail,
+      subject: `Invoice ${invoiceNumber} from BillNest`,
+      text: `Hello ${clientName},\n\nPlease find attached invoice ${invoiceNumber}.\n\nTotal: ${currency} ${totalAmount.toFixed(2)}\nDue Date: ${dueDateStr}\n\nThank you for your business!`,
+      attachments: [{ filename: `${invoiceNumber}.pdf`, content: pdfBuffer }],
+    });
+  }
+
+  async exportCsvReport(organizationId, filters = {}, allowedClientIds = null) {
+    const { invoices } = await this.getInvoices(organizationId, { ...filters, limit: 10000 }, allowedClientIds);
     let csv = "Invoice Number,Client Name,Client Email,Currency,Subtotal,Tax,Discount,Total,Status,Due Date,Created At\n";
     invoices.forEach((inv) => {
       const clientName = inv.client ? inv.client.name.replace(/"/g, '""') : "Unknown";
@@ -202,8 +233,8 @@ class InvoiceService {
     return csv;
   }
 
-  async exportPdfReport(organizationId, filters = {}) {
-    const { invoices } = await this.getInvoices(organizationId, { ...filters, limit: 10000 });
+  async exportPdfReport(organizationId, filters = {}, allowedClientIds = null) {
+    const { invoices } = await this.getInvoices(organizationId, { ...filters, limit: 10000 }, allowedClientIds);
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument();

@@ -10,7 +10,7 @@ const MemberDashboardTab = ({
 
   const myClientsCount = clients.length;
   const myInvoicesCount = invoices.length;
-  const pendingInvoices = invoices.filter(i => i.status === "pending" || i.status === "draft").length;
+  const pendingInvoices = invoices.filter(i => i.status === "sent" || i.status === "draft").length;
   const paidInvoices = invoices.filter(i => i.status === "paid").length;
   const revenueThisMonth = invoices.filter(i => i.status === "paid").reduce((acc, curr) => acc + curr.amount, 0);
 
@@ -121,7 +121,7 @@ const MemberDashboardTab = ({
             </div>
 
             <div className="space-y-3">
-              {invoices.filter(i => i.status === "pending").map(inv => (
+              {invoices.filter(i => i.status === "sent" || i.status === "overdue").map(inv => (
                 <div key={inv.id} className="p-3 bg-indigo-50/20 border border-indigo-100/30 rounded-2xl flex justify-between items-center">
                   <div>
                     <span className="text-xs font-black text-slate-800 block">{inv.id}</span>

@@ -66,7 +66,8 @@ const MemberPaymentsTab = ({ payments = [], user, invoices = [] }) => {
         </div>
 
         {/* Transactions list */}
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-600 border-collapse">
             <thead>
               <tr className="border-b border-slate-100">
@@ -132,6 +133,60 @@ const MemberPaymentsTab = ({ payments = [], user, invoices = [] }) => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden space-y-4">
+          {filteredPayments.length === 0 ? (
+            <div className="p-8 text-center text-slate-450 italic bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 font-bold text-xs">
+              No matching traces registered under the selected segment.
+            </div>
+          ) : (
+            filteredPayments.map(p => (
+              <div key={p.id} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-[0_4px_15px_rgba(15,23,42,0.015)] space-y-4 hover:border-indigo-100 transition-colors">
+                <div className="flex justify-between items-center">
+                  <span className="font-mono text-xs font-bold text-slate-900">{p.id}</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase border ${
+                    p.status?.toLowerCase() === "successful" || p.status?.toLowerCase() === "succeeded"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                      : p.status?.toLowerCase() === "failed"
+                      ? "bg-rose-50 text-rose-700 border-rose-100"
+                      : "bg-slate-50 text-slate-600 border-slate-200"
+                  }`}>{p.status}</span>
+                </div>
+
+                <div className="space-y-2 text-xs font-bold text-slate-500">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Payer (Client)</span>
+                    <span className="text-slate-800">{p.client}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Receiver</span>
+                    <span className="text-slate-800">{user?.organization?.name || "CodeCraft Agency"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Method</span>
+                    <span className="text-slate-800 font-semibold uppercase">{p.method || "Stripe Card"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Date</span>
+                    <span className="text-slate-800 font-semibold">{p.date}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline pt-2 border-t border-slate-50">
+                    <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">Amount</span>
+                    <span className="text-slate-950 font-black text-sm">₹{p.amount.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end pt-3 border-t border-slate-50">
+                  <span className="text-[10px] text-slate-400 font-bold flex items-center gap-0.5 select-none">
+                    <span className="material-symbols-outlined text-[14px]">lock_outline</span>
+                    Audit Locked
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
       </div>

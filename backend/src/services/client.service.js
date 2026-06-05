@@ -21,13 +21,17 @@ class ClientService {
 
 
 
-  async getClients(organizationId, query = {}) {
+  async getClients(organizationId, query = {}, allowedClientIds = null) {
     const filter = { organization: organizationId };
     if (query.isActive !== undefined) {
       filter.isActive = query.isActive === "true";
     }
     if (query.createdBy !== undefined) {
       filter.createdBy = query.createdBy;
+    }
+
+    if (allowedClientIds !== null) {
+      filter._id = { $in: allowedClientIds };
     }
 
     return await Client.find(filter).sort({ name: 1 });

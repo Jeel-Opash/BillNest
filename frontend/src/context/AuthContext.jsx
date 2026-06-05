@@ -54,8 +54,6 @@ export const AuthProvider = ({ children }) => {
           return res.data.token;
         })
         .catch((error) => {
-          // Only clear the session if the backend explicitly rejected the token (e.g. status < 500, like 400, 401, 403)
-          // Do NOT clear the session if the backend is down / unreachable (no response or network error)
           if (error.response && error.response.status < 500) {
             clearSession();
           }
@@ -82,7 +80,71 @@ export const AuthProvider = ({ children }) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await axios.get("/auth/me");
+      if (res.data.success) {
+        setUser(res.data.user);
+        localStorage.setItem("bn_user", JSON.stringify(res.data.user));
+        return res.data.user;
+      }
+    } catch (err) {
+      if (err.response?.status !== 401 && err.response?.status !== 403) {
+        console.error("Error fetching current user profile:", err);
+      }
+      throw err;
+    }
+    return null;
+  };
+
   useEffect(() => {
+    // 1. Request Interceptor
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const activeToken = localStorage.getItem("bn_access_token") || tokenRef.current;
+        if (activeToken) {
+          config.headers.Authorization = `Bearer ${activeToken}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // 2. Response Interceptor
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        if (
+          error.response &&
+          error.response.status === 401 &&
+          !originalRequest._retry &&
+          !originalRequest.skipAuthRefresh &&
+          !originalRequest.url?.includes("/auth/refresh") &&
+          !originalRequest.url?.includes("/auth/logout")
+        ) {
+          originalRequest._retry = true;
+
+          try {
+            const newAccessToken = await refreshSession();
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return axios(originalRequest);
+          } catch (refreshError) {
+            if (refreshError.response?.status !== 401 && refreshError.response?.status !== 403) {
+              console.error("Auto refresh interceptor failed:", refreshError);
+            }
+            if (refreshError.response) {
+              await logout(true);
+            }
+            return Promise.reject(refreshError);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // 3. Initialize Auth
     const initializeAuth = async () => {
       const savedRefreshToken = localStorage.getItem("bn_refresh_token");
       const savedUser = localStorage.getItem("bn_user");
@@ -93,8 +155,8 @@ export const AuthProvider = ({ children }) => {
         try {
           const base64Url = token.split('.')[1];
           const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
           }).join(''));
 
           const { exp } = JSON.parse(jsonPayload);
@@ -114,13 +176,13 @@ export const AuthProvider = ({ children }) => {
           if (!savedAccessToken || isTokenExpired(savedAccessToken)) {
             await refreshSession();
           }
+          await fetchCurrentUser();
         } catch (error) {
           if (error.response && (error.response.status === 401 || error.response.status === 403)) {
             console.warn("Session expired on startup. Logging out silently.");
             await logout(true);
           } else {
             console.error("Silent refresh failed on startup:", error);
-            // Do NOT log out and clear the session if it is a network error (no response received from server)
             const isNetworkError = !error.response;
             if (!savedAccessToken && !isNetworkError) {
               await logout(true);
@@ -132,66 +194,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []);
-
-
-  useEffect(() => {
-    const requestInterceptor = axios.interceptors.request.use(
-      (config) => {
-        const activeToken = tokenRef.current || localStorage.getItem("bn_access_token");
-        if (activeToken) {
-          config.headers.Authorization = `Bearer ${activeToken}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
 
     return () => {
       axios.interceptors.request.eject(requestInterceptor);
-    };
-  }, []);
-
-
-  useEffect(() => {
-    const responseInterceptor = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-
-        if (
-          error.response &&
-          error.response.status === 401 &&
-          !originalRequest._retry &&
-          !originalRequest.skipAuthRefresh &&
-          !originalRequest.url?.includes("/auth/refresh") &&
-          !originalRequest.url?.includes("/auth/logout")
-        ) {
-          originalRequest._retry = true;
-
-          try {
-            const newAccessToken = await refreshSession();
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            return axios(originalRequest);
-          } catch (refreshError) {
-            console.error("Auto refresh interceptor failed:", refreshError);
-            // Only log out if it is not a network/connection error (i.e. the server responded and rejected the token)
-            if (refreshError.response) {
-              await logout(true);
-            }
-            return Promise.reject(refreshError);
-          }
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
       axios.interceptors.response.eject(responseInterceptor);
     };
   }, []);
-
 
   const register = async (name, username, email, password, phone = "", avatar = "", organizationName = "") => {
     try {
@@ -559,7 +567,8 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         changePassword,
         forgotPassword,
-        resetPassword
+        resetPassword,
+        fetchCurrentUser
       }}
     >
       {children}

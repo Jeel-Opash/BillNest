@@ -4,10 +4,18 @@ const MemberClientsTab = ({
   clients,
   setClients,
   invoices,
-  showToast
+  showToast,
+  user
 }) => {
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState(null);
+
+  const getClientRole = (clientIdOrName) => {
+    if (!user) return "none";
+    if (user.role === "owner" || user.role === "admin") return "admin";
+    const access = user.clientAccess?.find(a => a.clientId === clientIdOrName || a.clientName === clientIdOrName);
+    return access ? access.role : "none";
+  };
 
 
   const [editingId, setEditingId] = useState(null);
@@ -40,6 +48,10 @@ const MemberClientsTab = ({
     }
 
     if (editingId) {
+      if (getClientRole(editingId) === "viewer") {
+        showToast("❌ Permission Denied: You have Viewer-only access for this client.", "error");
+        return;
+      }
       setClients(clients.map(c => c.id === editingId ? {
         ...c,
         name: formName,
@@ -72,6 +84,10 @@ const MemberClientsTab = ({
   };
 
   const handleEditClick = (c) => {
+    if (getClientRole(c.id || c._id || c.company) === "viewer") {
+      showToast("❌ Permission Denied: You have Viewer-only access for this client.", "error");
+      return;
+    }
     setEditingId(c.id);
     setFormName(c.name || "");
     setFormCompany(c.company || "");
@@ -83,7 +99,7 @@ const MemberClientsTab = ({
     setFormNotes(c.notes || "");
   };
 
-  const filteredClients = clients.filter(c => 
+  const filteredClients = clients.filter(c =>
     c.company.toLowerCase().includes(search.toLowerCase()) ||
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.email.toLowerCase().includes(search.toLowerCase())
@@ -92,10 +108,8 @@ const MemberClientsTab = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-      {/* Left side: Directory list */}
       <div className="lg:col-span-8 space-y-6">
 
-        {/* Safeguard banner */}
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-3xl flex items-start gap-3 select-none">
           <span className="material-symbols-outlined text-[20px] text-slate-500 mt-0.5">lock_outline</span>
           <div>
@@ -140,18 +154,27 @@ const MemberClientsTab = ({
                 return (
                   <div
                     key={c.id}
-                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
-                      isSelected
-                        ? "border-indigo-600 bg-indigo-50/10"
-                        : "border-slate-100 hover:border-slate-200 bg-slate-50/50"
-                    }`}
+                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${isSelected
+                      ? "border-indigo-600 bg-indigo-50/10"
+                      : "border-slate-100 hover:border-slate-200 bg-slate-50/50"
+                      }`}
                   >
                     <div>
                       <div className="flex justify-between items-start gap-2">
                         <h5 className="font-heading font-black text-slate-900 text-sm leading-snug">{c.company}</h5>
-                        <span className="bg-indigo-50 border border-indigo-100 text-[9px] font-black px-2.5 py-0.5 rounded uppercase text-indigo-700">
-                          {c.currency}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="bg-indigo-50 border border-indigo-100 text-[9px] font-black px-2.5 py-0.5 rounded uppercase text-indigo-700">
+                            {c.currency}
+                          </span>
+                          <span className={`px-1.5 py-0.2 rounded text-[7px] font-black uppercase tracking-wider border ${getClientRole(c.id || c._id || c.company) === "admin"
+                            ? "bg-amber-50 text-amber-700 border-amber-100"
+                            : getClientRole(c.id || c._id || c.company) === "member"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                              : "bg-slate-100 text-slate-500 border-slate-200"
+                            }`}>
+                            {getClientRole(c.id || c._id || c.company)}
+                          </span>
+                        </div>
                       </div>
                       <p className="text-[11px] text-slate-500 font-semibold mt-1">POC: {c.name}</p>
                       <p className="text-[10px] text-slate-400 font-medium mt-0.5">{c.email}</p>
@@ -167,14 +190,20 @@ const MemberClientsTab = ({
                       </button>
 
                       <div className="flex gap-2 items-center">
-                        <button
-                          onClick={() => handleEditClick(c)}
-                          className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-all shadow-sm"
-                          title="Edit Details"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">edit</span>
-                        </button>
-                        
+                        {getClientRole(c.id || c._id || c.company) !== "viewer" ? (
+                          <button
+                            onClick={() => handleEditClick(c)}
+                            className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-all shadow-sm"
+                            title="Edit Details"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                        ) : (
+                          <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center cursor-not-allowed border border-transparent" title="Edit Locked (Viewer Role)">
+                            <span className="material-symbols-outlined text-[14px]">lock</span>
+                          </div>
+                        )}
+
                         {/* Disabled Deletion control with lock visual indicator */}
                         <div
                           className="w-7 h-7 rounded-lg bg-slate-100 border border-transparent text-slate-400 flex items-center justify-center select-none"

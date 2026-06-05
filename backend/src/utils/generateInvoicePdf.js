@@ -29,7 +29,7 @@ const generateInvoicePdf = async (
 
 
       doc.fontSize(14).text(
-        `Invoice Number: ${invoice.invoiceNumber}`
+        `Invoice Number: ${invoice.invoiceNumber || invoice.id || "INV-TEMP"}`
       );
 
       doc.text(
@@ -49,9 +49,9 @@ const generateInvoicePdf = async (
         .fontSize(18)
         .text("Bill To:");
 
-      doc.fontSize(14).text(client.name);
+      doc.fontSize(14).text(client.name || client.company || "Valued Client");
 
-      doc.text(client.email);
+      doc.text(client.email || "");
 
       doc.text(client.company || "");
 
@@ -66,9 +66,15 @@ const generateInvoicePdf = async (
 
       doc.moveDown();
 
-      invoice.items.forEach((item) => {
+      const currencySymbol = invoice.currency === "USD" ? "$" : invoice.currency === "EUR" ? "€" : "₹";
+
+      const itemsList = invoice.items || [];
+      itemsList.forEach((item) => {
+        const name = item.name || item.desc || "Item";
+        const quantity = item.quantity || item.qty || 1;
+        const price = item.price || item.unitPrice || 0;
         doc.fontSize(12).text(
-          `${item.name} | Qty: ${item.quantity} | Price: $${item.price}`
+          `${name} | Qty: ${quantity} | Price: ${currencySymbol}${price.toLocaleString()}`
         );
       });
 
@@ -76,14 +82,14 @@ const generateInvoicePdf = async (
 
 
       doc.text(
-        `Subtotal: $${invoice.subtotal}`
+        `Subtotal: ${currencySymbol}${(invoice.subtotal || 0).toLocaleString()}`
       );
 
-      doc.text(`Tax: $${invoice.tax}`);
+      doc.text(`Tax: ${currencySymbol}${(invoice.tax || invoice.taxAmount || 0).toLocaleString()}`);
 
       doc
         .fontSize(16)
-        .text(`Total: $${invoice.total}`);
+        .text(`Total: ${currencySymbol}${(invoice.total || invoice.totalAmount || 0).toLocaleString()}`);
 
       doc.moveDown();
 
@@ -103,8 +109,5 @@ const generateInvoicePdf = async (
     }
   });
 };
-
-
-
 
 export default generateInvoicePdf;

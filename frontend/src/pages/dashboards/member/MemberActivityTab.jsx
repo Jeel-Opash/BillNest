@@ -35,16 +35,14 @@ const MemberActivityTab = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-      {/* Left side: Timeline list */}
       <div className="lg:col-span-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-6">
-        
+
         <div className="flex flex-col sm:flex-row justify-between gap-4 border-b border-slate-50 pb-3 items-center">
           <div>
             <h4 className="font-heading text-xs font-bold text-slate-800 uppercase tracking-wider">Workspace Activity Center</h4>
             <span className="text-[10px] text-slate-400 font-semibold mt-0.5 block">Audit and operations activity traces</span>
           </div>
 
-          {/* Filtering buttons */}
           <div className="flex gap-1.5 text-[10px] font-black uppercase select-none">
             {[
               { id: "all", label: "All Traces" },
@@ -55,11 +53,10 @@ const MemberActivityTab = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveSegment(tab.id)}
-                className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                  activeSegment === tab.id
+                className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${activeSegment === tab.id
                     ? "bg-slate-800 border-slate-800 text-white shadow-sm"
                     : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -67,16 +64,13 @@ const MemberActivityTab = () => {
           </div>
         </div>
 
-        {/* Timeline dispatches */}
         <div className="space-y-4 relative pl-4 before:absolute before:left-6 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
           {filteredActivities.map(act => {
             const icon = getIcon(act.type);
             return (
               <div key={act.id} className="relative flex gap-4 items-start hover:bg-slate-50/30 p-2 rounded-2xl transition-colors">
-                {/* Dot */}
                 <span className="absolute left-[3px] top-3 w-1.5 h-1.5 rounded-full bg-slate-300 ring-4 ring-white z-10"></span>
-                
-                {/* Visual Icon */}
+
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center border flex-shrink-0 z-20 ${icon.color}`}>
                   <span className="material-symbols-outlined text-[16px]">{icon.symbol}</span>
                 </div>
@@ -93,7 +87,6 @@ const MemberActivityTab = () => {
 
       </div>
 
-      {/* Right side: Tasks stats */}
       <div className="lg:col-span-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
         <h4 className="font-heading text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-50 pb-2 mb-4">
           Assigned Tasks Summary

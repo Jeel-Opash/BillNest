@@ -4,11 +4,21 @@ const AdminClientsTab = ({
   clients,
   setClients,
   invoices,
-  showToast
+  showToast,
+  user
 }) => {
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+
+  const getClientRole = (clientIdOrName) => {
+    if (!user) return "none";
+    if (user.role === "owner") return "admin";
+    const clientAccessList = user.clientAccess || [];
+    if (user.role === "admin" && clientAccessList.length === 0) return "admin";
+    const access = clientAccessList.find(a => a.clientId === clientIdOrName || a.clientName === clientIdOrName);
+    return access ? access.role : "none";
+  };
 
 
   const [editingId, setEditingId] = useState(null);
@@ -41,6 +51,10 @@ const AdminClientsTab = ({
     }
 
     if (editingId) {
+      if (getClientRole(editingId) === "viewer") {
+        showToast("❌ Permission Denied: You have Viewer-only access for this client.", "error");
+        return;
+      }
       setClients(clients.map(c => c.id === editingId ? {
         ...c,
         name: formName,
@@ -73,6 +87,10 @@ const AdminClientsTab = ({
   };
 
   const handleEditClick = (c) => {
+    if (getClientRole(c.id || c._id || c.company) === "viewer") {
+      showToast("❌ Permission Denied: You have Viewer-only access for this client.", "error");
+      return;
+    }
     setEditingId(c.id);
     setFormName(c.name || "");
     setFormCompany(c.company || "");
@@ -85,6 +103,10 @@ const AdminClientsTab = ({
   };
 
   const toggleArchive = (id, company) => {
+    if (getClientRole(id) !== "admin") {
+      showToast("❌ Permission Denied: Only Client Admins can archive this client.", "error");
+      return;
+    }
     setClients(clients.map(c => c.id === id ? { ...c, archived: !c.archived } : c));
     showToast(`Client "${company}" status modified.`, "info");
   };
@@ -165,9 +187,20 @@ const AdminClientsTab = ({
                     <div>
                       <div className="flex justify-between items-start gap-2">
                         <h5 className="font-heading font-black text-slate-900 text-sm leading-snug">{c.company}</h5>
-                        <span className="bg-indigo-50 border border-indigo-100 text-[9px] font-black px-2 py-0.5 rounded uppercase text-indigo-700">
-                          {c.currency}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="bg-indigo-50 border border-indigo-100 text-[9px] font-black px-2 py-0.5 rounded uppercase text-indigo-700">
+                            {c.currency}
+                          </span>
+                          <span className={`px-1.5 py-0.2 rounded text-[7px] font-black uppercase tracking-wider border ${
+                            getClientRole(c.id || c._id || c.company) === "admin"
+                              ? "bg-amber-50 text-amber-700 border-amber-100"
+                              : getClientRole(c.id || c._id || c.company) === "member"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                : "bg-slate-100 text-slate-500 border-slate-200"
+                          }`}>
+                            {getClientRole(c.id || c._id || c.company)}
+                          </span>
+                        </div>
                       </div>
                       <p className="text-[11px] text-slate-500 font-semibold mt-1">POC: {c.name}</p>
                       <p className="text-[10px] text-slate-400 font-medium mt-0.5">{c.email}</p>
@@ -183,22 +216,34 @@ const AdminClientsTab = ({
                       </button>
 
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditClick(c)}
-                          className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-all shadow-sm"
-                          title="Edit Details"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">edit</span>
-                        </button>
-                        <button
-                          onClick={() => toggleArchive(c.id, c.company)}
-                          className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 flex items-center justify-center cursor-pointer transition-all shadow-sm"
-                          title={c.archived ? "Restore Client" : "Archive Client"}
-                        >
-                          <span className="material-symbols-outlined text-[16px]">
-                            {c.archived ? "settings_backup_restore" : "archive"}
-                          </span>
-                        </button>
+                        {getClientRole(c.id || c._id || c.company) !== "viewer" ? (
+                          <button
+                            onClick={() => handleEditClick(c)}
+                            className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-all shadow-sm"
+                            title="Edit Details"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                        ) : (
+                          <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center cursor-not-allowed border border-transparent" title="Edit Locked (Viewer Role)">
+                            <span className="material-symbols-outlined text-[14px]">lock</span>
+                          </div>
+                        )}
+                        {getClientRole(c.id || c._id || c.company) === "admin" ? (
+                          <button
+                            onClick={() => toggleArchive(c.id, c.company)}
+                            className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 flex items-center justify-center cursor-pointer transition-all shadow-sm"
+                            title={c.archived ? "Restore Client" : "Archive Client"}
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              {c.archived ? "settings_backup_restore" : "archive"}
+                            </span>
+                          </button>
+                        ) : (
+                          <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center cursor-not-allowed border border-transparent" title="Archive Locked (Requires Client Admin)">
+                            <span className="material-symbols-outlined text-[14px]">lock</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

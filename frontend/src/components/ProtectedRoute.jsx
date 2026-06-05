@@ -5,13 +5,10 @@ import { useAuth } from "../context/AuthContext";
 const LoadingScreen = () => (
   <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center gap-4 font-sans">
     <div className="flex items-center gap-2.5 mb-4">
-      <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
-        BN
-      </div>
+      <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">BN</div>
       <span className="font-bold text-lg text-slate-900 tracking-tight">BillNest</span>
     </div>
-
-   <div className="flex gap-4 w-full max-w-4xl px-6">
+    <div className="flex gap-4 w-full max-w-4xl px-6">
       <div className="w-48 flex flex-col gap-3 flex-shrink-0">
         <div className="h-8 bg-slate-200 rounded-xl animate-pulse"></div>
         {[...Array(6)].map((_, i) => (
@@ -31,7 +28,6 @@ const LoadingScreen = () => (
         </div>
       </div>
     </div>
-
     <p className="text-xs text-slate-400 font-semibold mt-2 animate-pulse">Loading your workspace...</p>
   </div>
 );
@@ -40,23 +36,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  if (isLoading) return <LoadingScreen />;
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-
-  if (!user.organization && location.pathname !== "/welcome") {
-    return <Navigate to="/welcome" replace />;
-  }
-
-
-  if (user.organization && location.pathname === "/welcome") {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;

@@ -24,6 +24,7 @@ import {
   forgotPasswordController,
   resetPasswordController,
   cancelJoinRequestController,
+  getMe,
 } from "../controllers/auth.controller.js";
 
 const router = express.Router();
@@ -36,6 +37,7 @@ router.post("/refresh", refresh);
 router.post("/logout", logout);
 router.post("/accept-invite", acceptInvitation);
 router.put("/update-role", authMiddleware, updateRole);
+router.get("/me", authMiddleware, getMe);
 
 router.post("/organization/create", authMiddleware, createOrganizationController);
 router.put("/profile", authMiddleware, updateProfileController);

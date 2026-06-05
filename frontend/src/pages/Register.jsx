@@ -188,10 +188,8 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex font-sans antialiased text-slate-700">
 
-      {/* ── FORM PANEL ── */}
       <div className="flex-1 flex items-start justify-center p-6 sm:p-12 overflow-y-auto">
 
-        {/* Logo */}
         <div className="absolute top-6 left-6 flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md">BN</div>
           <span className="font-bold text-slate-900 text-sm tracking-tight">BillNest</span>
@@ -199,18 +197,15 @@ const Register = () => {
 
         <div className="w-full max-w-[480px] pt-4">
 
-          {/* Header */}
           <div className="mb-8">
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create an account</h2>
             <p className="text-sm text-slate-400 mt-1.5">Set up your profile to initialize your workspace tenant.</p>
           </div>
 
-          {/* Card — same shadow/border as dashboard */}
           <div className="bg-white border border-slate-100 rounded-3xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-8 flex flex-col gap-5">
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-              {/* Row 1 */}
               <div className="grid grid-cols-2 gap-4">
                 <Field
                   label="Full Name"
@@ -238,21 +233,12 @@ const Register = () => {
                 />
               </div>
 
-              {/* Row 2 */}
               <div className="grid grid-cols-2 gap-4">
-                <Field
-                  label="Work Email"
-                  name="email"
-                  type="email"
-                  placeholder="name@company.com"
-                  required
-                  icon="mail"
-                  formData={formData}
-                  touched={touched}
-                  errors={errors}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                />
+                <Field label="Work Email" name="email"
+                  type="email" placeholder="name@company.com" required
+                  icon="mail" formData={formData} touched={touched}
+                  errors={errors} onChange={handleInputChange}
+                  onBlur={handleBlur} />
                 <Field
                   label="Phone"
                   name="phone"
@@ -266,7 +252,6 @@ const Register = () => {
                 />
               </div>
 
-              {/* Password */}
               <div className="space-y-1.5">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Password <span className="text-rose-500">*</span>
@@ -293,7 +278,6 @@ const Register = () => {
                   </button>
                 </div>
 
-                {/* Strength meter */}
                 {formData.password && (
                   <div className="space-y-1 mt-1.5">
                     <div className="flex gap-1 h-1">
@@ -314,7 +298,6 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Confirm Password */}
               <Field
                 label="Confirm Password"
                 name="confirmPassword"
@@ -329,7 +312,6 @@ const Register = () => {
                 onBlur={handleBlur}
               />
 
-              {/* Avatar picker */}
               <div className="space-y-2">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Avatar <span className="font-normal opacity-60">(optional)</span>
@@ -355,7 +337,6 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Terms */}
               <div className="flex items-start gap-2.5 pt-1">
                 <input
                   type="checkbox"
@@ -372,7 +353,6 @@ const Register = () => {
                 </label>
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -393,14 +373,12 @@ const Register = () => {
 
             </form>
 
-            {/* Divider */}
             <div className="relative flex items-center gap-3">
               <div className="flex-1 h-px bg-slate-100" />
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">or</span>
               <div className="flex-1 h-px bg-slate-100" />
             </div>
 
-            {/* Login CTA */}
             <p className="text-center text-xs text-slate-500">
               Already have an account?{" "}
               <Link to="/login" className="text-indigo-600 font-bold hover:underline">Sign in</Link>
@@ -408,7 +386,6 @@ const Register = () => {
 
           </div>
 
-          {/* Trust badges */}
           <div className="mt-6 flex items-center justify-center gap-4 pb-8">
             <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100/50 text-indigo-600 rounded-full">
               <span className="material-symbols-outlined text-[14px] animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>

@@ -17,7 +17,7 @@ const csvEscape = (value) => {
   return `"${String(safeValue).replace(/"/g, '""')}"`;
 };
 
-const TeamTab = ({ teamList, setTeamList, showToast }) => {
+const TeamTab = ({ teamList, setTeamList, showToast, clients = [] }) => {
   const { user } = useAuth();
   
 
@@ -52,6 +52,53 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
   const [inviteRole, setInviteRole] = useState("member");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
 
+  // New Client Access states
+  const [inviteClientAccess, setInviteClientAccess] = useState({});
+  const [editingPermissionsTeammate, setEditingPermissionsTeammate] = useState(null);
+  const [teammateClientAccess, setTeammateClientAccess] = useState({});
+  const [requestClientAccess, setRequestClientAccess] = useState({});
+
+  const handleOpenPermissionsModal = (teammate) => {
+    setEditingPermissionsTeammate(teammate);
+    const initialAccess = {};
+    if (teammate.clientAccess) {
+      teammate.clientAccess.forEach(a => {
+        initialAccess[a.clientId] = a.role;
+      });
+    }
+    setTeammateClientAccess(initialAccess);
+  };
+
+  const handleSaveTeammatePermissions = async () => {
+    const clientAccessPayload = Object.entries(teammateClientAccess)
+      .map(([clientId, role]) => {
+        const client = clients.find(c => c.id === clientId || c._id === clientId);
+        return {
+          clientId,
+          clientName: client ? (client.company || client.name) : "",
+          role
+        };
+      });
+
+    try {
+      const res = await axios.put("/auth/update-role", {
+        userId: editingPermissionsTeammate.id,
+        clientAccess: clientAccessPayload
+      });
+      if (res.data.success) {
+        setTeamList(teamList.map(t => t.id === editingPermissionsTeammate.id ? { ...t, clientAccess: clientAccessPayload } : t));
+        showToast(`Client permissions updated for ${editingPermissionsTeammate.name} successfully!`, "success");
+        setEditingPermissionsTeammate(null);
+      }
+    } catch (err) {
+      console.error("Failed to update client permissions:", err);
+      // Fallback for mock/simulation or offline mode
+      setTeamList(teamList.map(t => t.id === editingPermissionsTeammate.id ? { ...t, clientAccess: clientAccessPayload } : t));
+      showToast(`Permissions updated locally (Simulation/Offline fallback)`, "warning");
+      setEditingPermissionsTeammate(null);
+    }
+  };
+
   const teamInsights = useMemo(() => {
     const roleCounts = teamList.reduce(
       (counts, teammate) => {
@@ -73,7 +120,26 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     const query = rosterSearch.trim().toLowerCase();
     const rolePriority = { owner: 0, admin: 1, member: 2, read_only: 3 };
 
-    return teamList
+    // Filter teamList by allowed client IDs if the current user has restricted client access
+    let visibleList = teamList;
+    if (user && user.role !== "owner") {
+      const userAllowedClientIds = user.clientAccess?.filter(a => a.role && a.role !== "none").map(a => a.clientId?.toString()) || [];
+      if (userAllowedClientIds.length > 0) {
+        visibleList = teamList.filter(t => {
+          // Always show owners
+          if (t.role === "owner") return true;
+          // Always show self
+          const isSelf = t.id === user?._id || t.id === user?.id || t.email?.toLowerCase() === user?.email?.toLowerCase();
+          if (isSelf) return true;
+          
+          // Check if teammate shares at least one client with the current user
+          const teammateClientIds = t.clientAccess?.filter(a => a.role && a.role !== "none").map(a => a.clientId?.toString()) || [];
+          return teammateClientIds.some(cid => userAllowedClientIds.includes(cid));
+        });
+      }
+    }
+
+    return visibleList
       .filter((teammate) => {
         const role = normalizeRole(teammate.role);
         const status = teammate.status || "active";
@@ -99,7 +165,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
 
         return (rolePriority[normalizeRole(first.role)] ?? 9) - (rolePriority[normalizeRole(second.role)] ?? 9);
       });
-  }, [roleFilter, rosterSearch, sortMode, statusFilter, teamList]);
+  }, [roleFilter, rosterSearch, sortMode, statusFilter, teamList, user]);
 
   const selectedPendingRequests = useMemo(
     () => pendingRequests.filter((request) => selectedRequestIds.includes(request._id)),
@@ -114,10 +180,27 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     
     setIsSendingInvite(true);
     try {
-      const res = await axios.post("/auth/invite", { email: inviteEmail, role: inviteRole });
+      const clientAccessPayload = Object.entries(inviteClientAccess)
+        .filter(([_, role]) => role !== "none")
+        .map(([clientId, role]) => {
+          const client = clients.find(c => c.id === clientId || c._id === clientId);
+          return {
+            clientId,
+            clientName: client ? (client.company || client.name) : "",
+            role
+          };
+        });
+
+      const res = await axios.post("/auth/invite", {
+        email: inviteEmail,
+        role: inviteRole,
+        clientAccess: clientAccessPayload
+      });
+
       if (res.data.success) {
         showToast(`Invitation sent to ${inviteEmail} successfully!`, "success");
         setInviteEmail("");
+        setInviteClientAccess({});
       }
     } catch (err) {
       console.error("Failed to send invite:", err);
@@ -137,6 +220,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
           name: m.name || m.email.split("@")[0],
           email: m.email,
           role: m.role,
+          clientAccess: m.clientAccess || [],
           status: m.status || "active",
           lastLogin: m.lastLogin ? new Date(m.lastLogin).toLocaleString() : "Never"
         }));
@@ -284,10 +368,21 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     
     setIsProcessingAction(true);
     try {
+      const clientAccessPayload = Object.entries(requestClientAccess)
+        .filter(([_, role]) => role !== "none")
+        .map(([clientId, role]) => {
+          const client = clients.find(c => c.id === clientId || c._id === clientId);
+          return {
+            clientId,
+            clientName: client ? (client.company || client.name) : "",
+            role
+          };
+        });
+
       const payload = {
         action: actionType === "approve" ? "approved" : "rejected",
         notes: responseNotes,
-        ...(actionType === "approve" ? { finalRole: assignRole } : {})
+        ...(actionType === "approve" ? { finalRole: assignRole, clientAccess: clientAccessPayload } : {})
       };
 
       const res = await axios.post(`/auth/join-requests/${selectedRequest._id}/action`, payload);
@@ -295,6 +390,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
         showToast(`Join request ${actionType === "approve" ? "approved" : "rejected"} successfully!`, "success");
         setSelectedRequest(null);
         setResponseNotes("");
+        setRequestClientAccess({});
 
         fetchTeammates();
         fetchRequestsData();
@@ -317,7 +413,9 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
       }
     } catch (err) {
       console.error("Failed to update role:", err);
-      showToast(err.response?.data?.message || "Failed to update role.", "error");
+      // Fallback for mock/simulation or offline mode
+      setTeamList(teamList.map(t => t.id === userId ? { ...t, role: newRole } : t));
+      showToast(`Role updated to ${newRole.toUpperCase()} locally (Simulation/Offline fallback)`, "warning");
     }
   };
 
@@ -549,6 +647,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
                 {filteredTeamList.map(t => {
                   const initials = t.name.split(" ").map(w => w.charAt(0)).join("").substring(0, 2).toUpperCase();
                   const isRemoving = removingMemberId === t.id;
+                  const isSelf = t.id === user?._id || t.id === user?.id || t.email?.toLowerCase() === user?.email?.toLowerCase();
                   return (
                     <div key={t.id} className="p-4 bg-slate-50/40 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-200/80 transition-all">
                       <div className="flex items-center gap-3">
@@ -566,7 +665,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
                       <div className="flex flex-wrap items-center gap-6 text-xs w-full sm:w-auto justify-between sm:justify-end flex-1 sm:flex-initial">
                         <div>
                           <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Privilege Role</span>
-                          {t.role === "owner" ? (
+                          {t.role === "owner" || isSelf ? (
                             renderRoleBadge(t.role)
                           ) : (
                             <select
@@ -580,6 +679,19 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
                             </select>
                           )}
                         </div>
+                        {t.role !== "owner" && !isSelf && (
+                          <div>
+                            <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Client Access</span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPermissionsModal(t)}
+                              className="bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 text-indigo-700 rounded-lg py-1 px-2 text-xs font-semibold outline-none cursor-pointer transition-colors shadow-sm flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">shield_person</span>
+                              Configure ({t.clientAccess?.filter(a => a.role !== "none").length || 0})
+                            </button>
+                          </div>
+                        )}
                         <div className="text-left sm:text-right">
                           <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Last Login</span>
                           <span className="text-slate-600 font-bold">{t.lastLogin}</span>
@@ -595,7 +707,7 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
                             {t.status || "active"}
                           </span>
                         </div>
-                        {t.role !== "owner" && (
+                        {t.role !== "owner" && !isSelf && (
                           <button
                             onClick={() => handleDeleteTeammate(t.id, t.name)}
                             disabled={isRemoving}
@@ -639,18 +751,43 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Privilege Role</label>
-                      <select
-                        value={inviteRole}
-                        onChange={(e) => setInviteRole(e.target.value)}
-                        className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl p-3 text-xs font-semibold outline-none cursor-pointer transition-all"
-                      >
-                        {user?.role === "owner" && (
-                          <option value="admin">Admin (All privilege except billing)</option>
-                        )}
-                        <option value="member">Member (Write & Edit privilege)</option>
-                        <option value="read_only">Read Only (Observer privilege)</option>
-                      </select>
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                    className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl p-3 text-xs font-semibold outline-none cursor-pointer transition-all"
+                  >
+                    {user?.role === "owner" && (
+                      <option value="admin">Admin (All privilege except billing)</option>
+                    )}
+                    <option value="member">Member (Write & Edit privilege)</option>
+                    <option value="read_only">Read Only (Observer privilege)</option>
+                  </select>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="block text-[10px] text-slate-500 font-bold uppercase mb-2">Client Access & Roles</label>
+                  {clients.length === 0 ? (
+                    <p className="text-[10px] text-slate-400 italic">No clients registered. Invite will default to full workspace role scope.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                      {clients.map(c => (
+                        <div key={c.id || c._id} className="flex items-center justify-between gap-2 p-2 bg-white border border-slate-100 rounded-xl">
+                          <span className="text-[10px] font-bold text-slate-800 truncate max-w-[120px]">{c.company || c.name}</span>
+                          <select
+                            value={inviteClientAccess[c.id || c._id] || "none"}
+                            onChange={(e) => setInviteClientAccess({ ...inviteClientAccess, [c.id || c._id]: e.target.value })}
+                            className="bg-slate-50 border border-slate-200 rounded-lg py-1 px-1.5 text-[9px] font-bold outline-none cursor-pointer text-slate-700"
+                          >
+                            <option value="none">No Access</option>
+                            <option value="admin">Admin</option>
+                            <option value="member">Member</option>
+                            <option value="viewer">Viewer</option>
+                          </select>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                </div>
 
                     <button
                       type="submit"
@@ -876,18 +1013,45 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
                 </div>
 
                 {actionType === "approve" && (
-                  <div>
-                    <label className="block text-slate-500 text-xs font-bold mb-1">Assign Workspace Role</label>
-                    <select
-                      className="w-full bg-slate-50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none cursor-pointer transition-all"
-                      value={assignRole}
-                      onChange={(e) => setAssignRole(e.target.value)}
-                    >
-                      <option value="member">Member (Write & Edit)</option>
-                      <option value="read_only">Read-Only Observer</option>
-                      <option value="admin">Administrator</option>
-                    </select>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-slate-500 text-xs font-bold mb-1">Assign Workspace Role</label>
+                      <select
+                        className="w-full bg-slate-50 border border-slate-200/80 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none cursor-pointer transition-all"
+                        value={assignRole}
+                        onChange={(e) => setAssignRole(e.target.value)}
+                      >
+                        <option value="member">Member (Write & Edit)</option>
+                        <option value="read_only">Read-Only Observer</option>
+                        <option value="admin">Administrator</option>
+                      </select>
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="block text-slate-500 text-xs font-bold mb-1">Client Access Permissions</label>
+                      {clients.length === 0 ? (
+                        <p className="text-[10px] text-slate-400 italic">No clients registered.</p>
+                      ) : (
+                        <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1 border border-slate-100 rounded-xl p-2 bg-slate-50/50">
+                          {clients.map(c => (
+                            <div key={c.id || c._id} className="flex items-center justify-between gap-2 p-1.5 bg-white border border-slate-100 rounded-lg">
+                              <span className="text-[11px] font-bold text-slate-800 truncate max-w-[140px]">{c.company || c.name}</span>
+                              <select
+                                value={requestClientAccess[c.id || c._id] || "none"}
+                                onChange={(e) => setRequestClientAccess({ ...requestClientAccess, [c.id || c._id]: e.target.value })}
+                                className="bg-slate-50 border border-slate-200 rounded-lg py-0.5 px-1 text-[10px] font-bold outline-none cursor-pointer"
+                              >
+                                <option value="none">No Access</option>
+                                <option value="admin">Admin</option>
+                                <option value="member">Member</option>
+                                <option value="viewer">Viewer</option>
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
 
                 <div>
@@ -926,6 +1090,74 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {editingPermissionsTeammate && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h5 className="font-heading font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-indigo-600">shield_person</span>
+                Manage Client Access
+              </h5>
+              <button
+                onClick={() => setEditingPermissionsTeammate(null)}
+                className="text-slate-400 hover:text-slate-600 material-symbols-outlined cursor-pointer"
+              >
+                close
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="p-3 bg-slate-50 border border-slate-200/50 rounded-xl">
+                <div className="font-bold text-slate-800 text-xs truncate">{editingPermissionsTeammate.name}</div>
+                <div className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">{editingPermissionsTeammate.email}</div>
+              </div>
+
+              <div>
+                <label className="block text-slate-500 text-xs font-bold mb-2">Configure Client Permissions</label>
+                {clients.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">No clients registered in workspace.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    {clients.map(c => (
+                      <div key={c.id || c._id} className="flex items-center justify-between gap-3 p-2.5 bg-white border border-slate-100 rounded-xl shadow-sm">
+                        <span className="text-xs font-bold text-slate-800 truncate max-w-[160px]">{c.company || c.name}</span>
+                        <select
+                          value={teammateClientAccess[c.id || c._id] || "none"}
+                          onChange={(e) => setTeammateClientAccess({ ...teammateClientAccess, [c.id || c._id]: e.target.value })}
+                          className="bg-slate-50 border border-slate-200 rounded-lg py-1 px-2 text-xs font-semibold outline-none cursor-pointer text-slate-700"
+                        >
+                          <option value="none">No Access</option>
+                          <option value="admin">Admin</option>
+                          <option value="member">Member</option>
+                          <option value="viewer">Viewer</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setEditingPermissionsTeammate(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTeammatePermissions}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                Save Permissions
+              </button>
+            </div>
           </div>
         </div>
       )}

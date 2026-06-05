@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import AIAssistant from "../../components/AIAssistant";
 
 import AdminDashboardTab from "./admin/AdminDashboardTab";
 import AdminClientsTab from "./admin/AdminClientsTab";
@@ -45,9 +44,9 @@ const AdminDashboard = () => {
   ]);
 
   const [invoices, setInvoices] = useState([
-    { id: "INV-2026-0001", client: "XYZ Pvt Ltd", amount: 18000, date: "2026-05-29", dueDate: "2026-06-12", status: "sent", itemsList: [{ desc: "Custom Plugin Integration", qty: 1, price: 18000 }] },
-    { id: "INV-2026-0002", client: "ABC Restaurant", amount: 31000, date: "2026-05-28", dueDate: "2026-06-10", status: "sent", itemsList: [{ desc: "Website Design", qty: 1, price: 25000 }, { desc: "Hosting Support", qty: 12, price: 500 }] },
-    { id: "INV-2026-0003", client: "Pixel Studio", amount: 15000, date: "2026-05-20", dueDate: "2026-05-30", status: "paid", itemsList: [{ desc: "Logo Design Pro Package", qty: 1, price: 15000 }] }
+    { id: "INV-2026-0001", client: "XYZ Pvt Ltd", amount: 18000, date: "2026-05-29", dueDate: "2026-06-12", status: "sent", items: [{ desc: "Custom Plugin Integration", qty: 1, price: 18000 }] },
+    { id: "INV-2026-0002", client: "ABC Restaurant", amount: 31000, date: "2026-05-28", dueDate: "2026-06-10", status: "sent", items: [{ desc: "Website Design", qty: 1, price: 25000 }, { desc: "Hosting Support", qty: 12, price: 500 }] },
+    { id: "INV-2026-0003", client: "Pixel Studio", amount: 15000, date: "2026-05-20", dueDate: "2026-05-30", status: "paid", items: [{ desc: "Logo Design Pro Package", qty: 1, price: 15000 }] }
   ]);
 
   const [teamList, setTeamList] = useState(() => {
@@ -120,7 +119,7 @@ const AdminDashboard = () => {
         console.error("Failed to load backend team members:", err);
       }
     };
-    
+
     if (user) {
       fetchBackendTeammates();
     }
@@ -135,7 +134,7 @@ const AdminDashboard = () => {
       date: new Date().toISOString().split("T")[0],
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       status: "draft",
-      itemsList: [{ desc: "AI Copilot Created Billing Line", qty: 1, price: Number(amount) }]
+      items: [{ desc: "AI Copilot Created Billing Line", qty: 1, price: Number(amount) }]
     };
     const updated = [newInv, ...invoices];
     setInvoices(updated);
@@ -143,12 +142,30 @@ const AdminDashboard = () => {
     navigate("/dashboard/invoices");
   };
 
+  const allowedClientAccessIds = user?.clientAccess?.map(a => a.clientId) || [];
+  const hasClientAccessLimits = user?.clientAccess && user.clientAccess.length > 0;
+
+  const filteredClients = clients.filter(c => {
+    if (!hasClientAccessLimits) return true;
+    return allowedClientAccessIds.includes(c.id) || allowedClientAccessIds.includes(c._id);
+  });
+
+  const filteredInvoices = invoices.filter(inv => {
+    if (!hasClientAccessLimits) return true;
+    return filteredClients.some(c => c.name === inv.client || c.company === inv.client);
+  });
+
+  const filteredPayments = payments.filter(p => {
+    if (!hasClientAccessLimits) return true;
+    return filteredClients.some(c => c.name === p.client || c.company === p.client);
+  });
+
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
 
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-45 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -165,7 +182,7 @@ const AdminDashboard = () => {
               <p className="text-[10px] text-slate-400 font-black tracking-wider uppercase mt-0.5">Admin Console</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(false)}
             className="md:hidden text-slate-400 hover:text-slate-600 hover:bg-slate-50 p-1.5 rounded-lg transition-colors cursor-pointer"
           >
@@ -192,11 +209,10 @@ const AdminDashboard = () => {
                   handlePageChange(menu.id);
                   setIsSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-150 text-left cursor-pointer text-xs ${
-                  isActive
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-150 text-left cursor-pointer text-xs ${isActive
                     ? "bg-indigo-50 text-indigo-600 shadow-sm"
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <span className="material-symbols-outlined text-[18px]">{menu.symbol}</span>
                 <span>{menu.label}</span>
@@ -228,7 +244,7 @@ const AdminDashboard = () => {
 
         <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-4 md:px-8 bg-white/80 backdrop-blur-md border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setIsSidebarOpen(true)}
               className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-950 rounded-xl hover:bg-slate-100/80 transition-all cursor-pointer outline-none"
             >
@@ -329,8 +345,8 @@ const AdminDashboard = () => {
           {activePage === "dashboard" && (
             <AdminDashboardTab
               user={user}
-              clients={clients}
-              invoices={invoices}
+              clients={filteredClients}
+              invoices={filteredInvoices}
               teamList={teamList}
               handlePageChange={handlePageChange}
               showToast={showToast}
@@ -339,18 +355,21 @@ const AdminDashboard = () => {
 
           {activePage === "clients" && (
             <AdminClientsTab
-              clients={clients}
+              clients={filteredClients}
               setClients={setClients}
-              invoices={invoices}
+              invoices={filteredInvoices}
               showToast={showToast}
+              user={user}
             />
           )}
 
           {activePage === "invoices" && (
             <AdminInvoicesTab
-              invoices={invoices}
+              invoices={filteredInvoices}
               setInvoices={setInvoices}
-              clients={clients}
+              clients={filteredClients}
+              payments={filteredPayments}
+              setPayments={setPayments}
               user={user}
               showToast={showToast}
             />
@@ -359,8 +378,8 @@ const AdminDashboard = () => {
           {activePage === "subscriptions" && (
             <AdminSubscriptionsTab
               user={user}
-              clients={clients}
-              payments={payments}
+              clients={filteredClients}
+              payments={filteredPayments}
               setPayments={setPayments}
               showToast={showToast}
             />
@@ -368,10 +387,10 @@ const AdminDashboard = () => {
 
           {activePage === "payments" && (
             <AdminPaymentsTab
-              payments={payments}
+              payments={filteredPayments}
               setPayments={setPayments}
               user={user}
-              invoices={invoices}
+              invoices={filteredInvoices}
               showToast={showToast}
             />
           )}
@@ -383,13 +402,14 @@ const AdminDashboard = () => {
               setTeamList={setTeamList}
               addLocalInvitation={addLocalInvitation}
               showToast={showToast}
+              clients={filteredClients}
             />
           )}
 
           {activePage === "reports" && (
             <AdminReportsTab
-              invoices={invoices}
-              clients={clients}
+              invoices={filteredInvoices}
+              clients={filteredClients}
               user={user}
               showToast={showToast}
             />
@@ -414,15 +434,6 @@ const AdminDashboard = () => {
 
         </div>
       </main>
-
-      <AIAssistant
-        user={user}
-        clients={clients}
-        invoices={invoices}
-        payments={payments}
-        onCreateDraftInvoice={handleCreateDraftInvoice}
-        showToast={showToast}
-      />
 
     </div>
   );

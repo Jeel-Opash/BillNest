@@ -17,9 +17,17 @@ const invitationSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["admin", "member", "read-only"],
+      enum: ["admin", "member", "read-only", "read_only"],
       required: true,
     },
+
+    clientAccess: [
+      {
+        clientId: { type: String },
+        clientName: { type: String },
+        role: { type: String, enum: ["admin", "member", "viewer", "none"], default: "none" }
+      }
+    ],
 
     token: {
       type: String,

@@ -256,103 +256,185 @@ const PaymentsTab = ({
 
         {/* Segment 1: Payments Tables (all, succeeded, failed, refunded) */}
         {activeSegment !== "stripe" ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-[10px] font-black uppercase text-slate-400 bg-slate-50/50 border-b border-slate-100">
-                  <th className="p-3 pl-4">Transaction ID</th>
-                  <th className="p-3">Payer (Client)</th>
-                  <th className="p-3">Receiver (Workspace)</th>
-                  <th className="p-3">Reference invoice</th>
-                  <th className="p-3">Payment Method</th>
-                  <th className="p-3">Date</th>
-                  <th className="p-3">Amount</th>
-                  <th className="p-3 text-center">Status</th>
-                  <th className="p-3 pr-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
-                {filteredPayments.length > 0 ? (
-                  filteredPayments.map((p, idx) => {
-                    const isSucceeded = p.status?.toLowerCase() === "succeeded" || p.status?.toLowerCase() === "successful";
-                    const isFailed = p.status?.toLowerCase() === "failed";
-                    const isRefunded = p.status?.toLowerCase() === "refunded";
-
-                    return (
-                      <tr key={p.id || idx} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="p-3 pl-4 font-mono font-bold text-slate-900">{p.id}</td>
-                        <td className="p-3">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-800 flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[14px] text-indigo-500">upload_file</span>
-                              {p.client}
-                            </span>
-                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Payer (Outflow)</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-800 flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[14px] text-emerald-500">download_for_offline</span>
-                              {user?.organization?.name || "CodeCraft Agency"}
-                            </span>
-                            <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Receiver (Inflow)</span>
-                          </div>
-                        </td>
-                        <td className="p-3 font-mono font-bold text-indigo-600 hover:underline cursor-pointer">{p.invoice || "N/A"}</td>
-                        <td className="p-3 text-slate-500 flex items-center gap-1 mt-1">
-                          <span className="material-symbols-outlined text-[15px] text-slate-400">credit_card</span>
-                          {p.method || "Stripe Card"}
-                        </td>
-                        <td className="p-3 text-slate-400">{p.date}</td>
-                        <td className="p-3 font-black text-slate-950">{formatCurrency(p.amount)}</td>
-                        <td className="p-3 text-center">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                            isSucceeded 
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                              : isFailed 
-                                ? "bg-rose-50 text-rose-700 border-rose-100" 
-                                : "bg-amber-50 text-amber-700 border-amber-100"
-                          }`}>
-                            {p.status}
-                          </span>
-                        </td>
-                        <td className="p-3 pr-4 text-right">
-                          {isSucceeded && (
-                            <button
-                              onClick={() => {
-                                setRefundTarget(p);
-                                setRefundReason("Customer request");
-                              }}
-                              className="text-amber-600 hover:text-amber-800 font-black text-[10px] uppercase border border-amber-200 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded transition-colors cursor-pointer"
-                            >
-                              Refund
-                            </button>
-                          )}
-                          {isRefunded && p.refundReason && (
-                            <span className="text-[9px] text-slate-400 font-bold italic" title={p.refundReason}>
-                              Ref: {p.refundReason}
-                            </span>
-                          )}
-                          {isFailed && (
-                            <span className="text-[9px] text-rose-400 font-bold italic">
-                              Decline: Insufficient Funds
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="9" className="p-12 text-center text-slate-400 font-semibold italic border-2 border-dashed border-slate-50 rounded-2xl">
-                      No transaction records match the active segment criteria.
-                    </td>
+          <>
+            {/* Table (Desktop View) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] font-black uppercase text-slate-400 bg-slate-50/50 border-b border-slate-100">
+                    <th className="p-3 pl-4">Transaction ID</th>
+                    <th className="p-3">Payer (Client)</th>
+                    <th className="p-3">Receiver (Workspace)</th>
+                    <th className="p-3">Reference invoice</th>
+                    <th className="p-3">Payment Method</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Amount</th>
+                    <th className="p-3 text-center">Status</th>
+                    <th className="p-3 pr-4 text-right">Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
+                  {filteredPayments.length > 0 ? (
+                    filteredPayments.map((p, idx) => {
+                      const isSucceeded = p.status?.toLowerCase() === "succeeded" || p.status?.toLowerCase() === "successful";
+                      const isFailed = p.status?.toLowerCase() === "failed";
+                      const isRefunded = p.status?.toLowerCase() === "refunded";
+
+                      return (
+                        <tr key={p.id || idx} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="p-3 pl-4 font-mono font-bold text-slate-900">{p.id}</td>
+                          <td className="p-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-800 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[14px] text-indigo-500">upload_file</span>
+                                {p.client}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Payer (Outflow)</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-800 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[14px] text-emerald-500">download_for_offline</span>
+                                {user?.organization?.name || "CodeCraft Agency"}
+                              </span>
+                              <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Receiver (Inflow)</span>
+                            </div>
+                          </td>
+                          <td className="p-3 font-mono font-bold text-indigo-600 hover:underline cursor-pointer">{p.invoice || "N/A"}</td>
+                          <td className="p-3 text-slate-500 flex items-center gap-1 mt-1">
+                            <span className="material-symbols-outlined text-[15px] text-slate-400">credit_card</span>
+                            {p.method || "Stripe Card"}
+                          </td>
+                          <td className="p-3 text-slate-400">{p.date}</td>
+                          <td className="p-3 font-black text-slate-950">{formatCurrency(p.amount)}</td>
+                          <td className="p-3 text-center">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                              isSucceeded 
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                                : isFailed 
+                                  ? "bg-rose-50 text-rose-700 border-rose-100" 
+                                  : "bg-amber-50 text-amber-700 border-amber-100"
+                            }`}>
+                              {p.status}
+                            </span>
+                          </td>
+                          <td className="p-3 pr-4 text-right">
+                            {isSucceeded && (
+                              <button
+                                onClick={() => {
+                                  setRefundTarget(p);
+                                  setRefundReason("Customer request");
+                                }}
+                                className="text-amber-600 hover:text-amber-800 font-black text-[10px] uppercase border border-amber-200 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded transition-colors cursor-pointer"
+                              >
+                                Refund
+                              </button>
+                            )}
+                            {isRefunded && p.refundReason && (
+                              <span className="text-[9px] text-slate-400 font-bold italic" title={p.refundReason}>
+                                Ref: {p.refundReason}
+                              </span>
+                            )}
+                            {isFailed && (
+                              <span className="text-[9px] text-rose-400 font-bold italic">
+                                Decline: Insufficient Funds
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="9" className="p-12 text-center text-slate-400 font-semibold italic border-2 border-dashed border-slate-50 rounded-2xl">
+                        No transaction records match the active segment criteria.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Cards (Mobile View) */}
+            <div className="block md:hidden space-y-4">
+              {filteredPayments.length > 0 ? (
+                filteredPayments.map((p, idx) => {
+                  const isSucceeded = p.status?.toLowerCase() === "succeeded" || p.status?.toLowerCase() === "successful";
+                  const isFailed = p.status?.toLowerCase() === "failed";
+                  const isRefunded = p.status?.toLowerCase() === "refunded";
+
+                  return (
+                    <div key={p.id || idx} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-[0_4px_15px_rgba(15,23,42,0.015)] space-y-4 hover:border-indigo-100 transition-colors">
+                      <div className="flex justify-between items-center">
+                        <span className="font-mono text-xs font-bold text-slate-900">{p.id}</span>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                          isSucceeded 
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                            : isFailed 
+                              ? "bg-rose-50 text-rose-700 border-rose-100" 
+                              : "bg-amber-50 text-amber-700 border-amber-100"
+                        }`}>
+                          {p.status}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 text-xs font-bold text-slate-500">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Payer (Client)</span>
+                          <span className="text-slate-800">{p.client}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Receiver</span>
+                          <span className="text-slate-800">{user?.organization?.name || "CodeCraft Agency"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Invoice Ref</span>
+                          <span className="font-mono text-indigo-600">{p.invoice || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Date</span>
+                          <span className="text-slate-800 font-semibold">{p.date}</span>
+                        </div>
+                        <div className="flex justify-between items-baseline pt-2 border-t border-slate-50">
+                          <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">Amount</span>
+                          <span className="text-slate-950 font-black text-sm">{formatCurrency(p.amount)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-50">
+                        {isSucceeded && (
+                          <button
+                            onClick={() => {
+                              setRefundTarget(p);
+                              setRefundReason("Customer request");
+                            }}
+                            className="text-amber-650 hover:text-amber-800 font-black text-[10px] uppercase border border-amber-200 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl transition-colors cursor-pointer outline-none"
+                          >
+                            Refund
+                          </button>
+                        )}
+                        {isRefunded && p.refundReason && (
+                          <span className="text-[9px] text-slate-400 font-bold italic" title={p.refundReason}>
+                            Ref: {p.refundReason}
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="text-[9px] text-rose-450 font-bold italic">
+                            Decline: Insufficient Funds
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-10 text-center text-slate-400 font-semibold italic border-2 border-dashed border-slate-50 rounded-2xl text-xs">
+                  No transaction records match the active segment criteria.
+                </div>
+              )}
+            </div>
+          </>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-[10px] text-indigo-700 font-bold bg-indigo-50 border border-indigo-100/50 p-3 rounded-2xl">

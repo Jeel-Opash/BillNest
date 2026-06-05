@@ -38,8 +38,17 @@ const joinRequestSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["member", "read_only"],
-      required: true,
+      required: false,
+      default: undefined,
     },
+
+    clientAccess: [
+      {
+        clientId: { type: String },
+        clientName: { type: String },
+        role: { type: String, enum: ["admin", "member", "viewer", "none"], default: "none" }
+      }
+    ],
 
     message: {
       type: String,

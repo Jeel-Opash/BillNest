@@ -86,7 +86,7 @@ export const logout = async (req, res) => {
 
 export const inviteTeammate = async (req, res) => {
   try {
-    const { email, role } = req.body;
+    const { email, role, clientAccess } = req.body;
 
     if (req.user.role === "admin" && (role === "owner" || role === "admin")) {
       return res.status(403).json({
@@ -98,6 +98,7 @@ export const inviteTeammate = async (req, res) => {
     const invitation = await AuthService.inviteTeammate({
       email,
       role,
+      clientAccess,
       invitedByUserId: req.user.userId,
       organizationId: req.user.organizationId,
     });
@@ -231,7 +232,22 @@ export const getAuditLogs = async (req, res) => {
 
 export const getTeamMembers = async (req, res) => {
   try {
-    const members = await AuthService.getTeamMembers(req.user.organizationId);
+    let members = await AuthService.getTeamMembers(req.user.organizationId);
+
+    const requester = req.user;
+    if (requester.role !== "owner") {
+      const allowedClientIds = requester.clientAccess?.filter(a => a.role && a.role !== "none").map(a => a.clientId.toString()) || [];
+      if (allowedClientIds.length > 0) {
+        members = members.filter(m => {
+          if (m.role === "owner") return true;
+          if (m._id.toString() === requester.userId.toString()) return true;
+
+          const teammateClientIds = m.clientAccess?.filter(a => a.role && a.role !== "none").map(a => a.clientId.toString()) || [];
+          return teammateClientIds.some(cid => allowedClientIds.includes(cid));
+        });
+      }
+    }
+
     res.status(200).json({ success: true, members });
   } catch (error) {
     console.error("Get Team Members Error:", error);
@@ -241,9 +257,9 @@ export const getTeamMembers = async (req, res) => {
 
 export const updateRole = async (req, res) => {
   try {
-    const { role, userId } = req.body;
-    if (!role) {
-      return res.status(400).json({ success: false, message: "Role is required" });
+    const { role, clientAccess, userId } = req.body;
+    if (!role && !clientAccess) {
+      return res.status(400).json({ success: false, message: "Role or Client Access is required" });
     }
 
     const targetUserId = userId || req.user.userId;
@@ -266,31 +282,33 @@ export const updateRole = async (req, res) => {
         return res.status(403).json({ success: false, message: "Unauthorized to update members of another organization" });
       }
 
-      targetUser.role = role;
+      if (role !== undefined) targetUser.role = role;
+      if (clientAccess !== undefined) targetUser.clientAccess = clientAccess;
       await targetUser.save();
 
       await AuditService.logAction(
         req.user.organizationId,
         req.user.userId,
         "TEAM_MEMBER_ROLE_UPDATED",
-        { targetUserId, targetUserEmail: targetUser.email, newRole: role },
+        { targetUserId, targetUserEmail: targetUser.email, newRole: role, clientAccess },
         req.ip,
         req.headers["user-agent"]
       );
 
       return res.status(200).json({
         success: true,
-        message: "Teammate role updated successfully",
+        message: "Teammate details updated successfully",
         user: {
           _id: targetUser._id,
           name: targetUser.name,
           email: targetUser.email,
-          role: targetUser.role
+          role: targetUser.role,
+          clientAccess: targetUser.clientAccess || []
         }
       });
     }
 
-    const result = await AuthService.updateUserRole(req.user.userId, role);
+    const result = await AuthService.updateUserRole(req.user.userId, role, clientAccess);
     res.status(200).json({
       success: true,
       message: "Role updated successfully",
@@ -352,14 +370,14 @@ export const getRequestHistoryController = async (req, res) => {
 export const processJoinRequestController = async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, finalRole, notes } = req.body;
-    const request = await AuthService.processJoinRequest(id, req.user.userId, { action, finalRole, notes });
+    const { action, finalRole, clientAccess, notes } = req.body;
+    const request = await AuthService.processJoinRequest(id, req.user.userId, { action, finalRole, clientAccess, notes });
 
     await AuditService.logAction(
       req.user.organizationId,
       req.user.userId,
       action === "approved" ? "JOIN_REQUEST_APPROVED" : "JOIN_REQUEST_REJECTED",
-      { requestId: id, assignedRole: finalRole || request.role, notes },
+      { requestId: id, assignedRole: finalRole || request.role, clientAccess, notes },
       req.ip,
       req.headers["user-agent"]
     );
@@ -476,5 +494,31 @@ export const cancelJoinRequestController = async (req, res) => {
     res.status(200).json({ success: true, message: "Join request cancelled successfully" });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const getMe = async (req, res) => {
+  try {
+    const User = (await import("../models/user.model.js")).default;
+    const user = await User.findById(req.user.userId).populate("organization");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        clientAccess: user.clientAccess || [],
+        phone: user.phone,
+        avatar: user.avatar,
+        organization: user.organization
+      }
+    });
+  } catch (error) {
+    res.status(550).json({ success: false, message: error.message });
   }
 };

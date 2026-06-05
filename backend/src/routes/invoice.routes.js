@@ -14,6 +14,7 @@ import {
   voidInvoice,
   markInvoicePaid,
   deleteInvoice,
+  sendInvoiceEmailDirect,
 } from "../controllers/invoice.controller.js";
 
 const router = express.Router();
@@ -37,5 +38,6 @@ router.delete("/:id", roleMiddleware("owner", "admin"), deleteInvoice);
 
 router.get("/:id/pdf", downloadInvoicePdf);
 router.post("/:id/send-email", roleMiddleware("owner", "admin", "member"), sendInvoiceEmail);
+router.post("/send-email-direct", roleMiddleware("owner", "admin", "member"), sendInvoiceEmailDirect);
 
 export default router;

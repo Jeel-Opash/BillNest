@@ -12,7 +12,6 @@ import PaymentsTab from "./owner/PaymentsTab";
 import ReportsTab from "./owner/ReportsTab";
 import SettingsTab from "./owner/SettingsTab";
 import NotificationsTab from "./owner/NotificationsTab";
-import AIAssistant from "../../components/AIAssistant";
 
 const OwnerDashboard = () => {
   const { user, logout, showToast, addLocalInvitation } = useAuth();
@@ -25,6 +24,20 @@ const OwnerDashboard = () => {
     } catch (error) {
       console.error(`Local storage write failed for key "${key}":`, error);
       if (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED") {
+        if (key.includes("_settings")) {
+          try {
+            const parsed = JSON.parse(value);
+            if (parsed.logo) {
+              delete parsed.logo;
+              const reducedValue = JSON.stringify(parsed);
+              localStorage.setItem(key, reducedValue);
+              console.warn(`Recovered from QuotaExceededError by removing large logo from "${key}"`);
+              return;
+            }
+          } catch (e) {
+            console.error("Failed to parse settings value during quota recovery:", e);
+          }
+        }
         showToast("Local storage full! Please clear browser cache/storage or remove large images.", "warning");
       }
     }
@@ -176,14 +189,6 @@ const OwnerDashboard = () => {
     }
   });
   const [clientSearch, setClientSearch] = useState("");
-  const [newClientName, setNewClientName] = useState("");
-  const [newClientCompany, setNewClientCompany] = useState("");
-  const [newClientEmail, setNewClientEmail] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
-  const [newClientTaxId, setNewClientTaxId] = useState("");
-  const [newClientAddress, setNewClientAddress] = useState("");
-  const [newClientCurrency, setNewClientCurrency] = useState("INR");
-  const [newClientNotes, setNewClientNotes] = useState("");
 
 
   const [invoices, setInvoices] = useState(() => {
@@ -414,7 +419,7 @@ const OwnerDashboard = () => {
         console.error("Failed to load backend team members:", err);
       }
     };
-    
+
     if (user) {
       fetchBackendTeammates();
     }
@@ -586,31 +591,6 @@ const OwnerDashboard = () => {
     showToast(`PDF invoice generated for ${inv.id}!`, "success");
   };
 
-  const handleAddClient = (e) => {
-    e.preventDefault();
-    if (!newClientName || !newClientEmail) return;
-    const newC = {
-      id: `c${Date.now()}`,
-      name: newClientName,
-      company: newClientCompany,
-      email: newClientEmail,
-      phone: newClientPhone,
-      taxId: newClientTaxId,
-      address: newClientAddress,
-      currency: newClientCurrency,
-      notes: newClientNotes
-    };
-    setClients([...clients, newC]);
-    setNewClientName("");
-    setNewClientCompany("");
-    setNewClientEmail("");
-    setNewClientPhone("");
-    setNewClientTaxId("");
-    setNewClientAddress("");
-    setNewClientNotes("");
-    showToast(`Client ${newClientName} registered successfully!`, "success");
-  };
-
   const handleCreatePlan = (e) => {
     e.preventDefault();
     if (!newPlanName || newPlanPrice <= 0) return;
@@ -697,7 +677,7 @@ const OwnerDashboard = () => {
 
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-45 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -707,14 +687,14 @@ const OwnerDashboard = () => {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
-              AF
+              {(user?.organization?.name || "BN").substring(0, 2).toUpperCase()}
             </div>
             <div className="flex flex-col min-w-0">
-              <h1 className="font-heading text-lg font-bold text-slate-900 tracking-tight leading-none">AgencyFlow</h1>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Enterprise Plan</p>
+              <h1 className="font-heading text-lg font-bold text-slate-900 tracking-tight leading-none truncate max-w-[140px]">{user?.organization?.name || "BillNest"}</h1>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Owner Console</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(false)}
             className="md:hidden text-slate-400 hover:text-slate-600 hover:bg-slate-50 p-1.5 rounded-lg transition-colors cursor-pointer"
           >
@@ -799,7 +779,7 @@ const OwnerDashboard = () => {
 
         <header className="sticky top-0 right-0 z-40 h-16 w-full flex justify-between items-center px-4 md:px-8 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setIsSidebarOpen(true)}
               className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-950 rounded-xl hover:bg-slate-100/80 transition-all cursor-pointer outline-none"
             >
@@ -916,21 +896,6 @@ const OwnerDashboard = () => {
               clients={clients}
               setClients={setClients}
               invoices={invoices}
-              newClientName={newClientName}
-              setNewClientName={setNewClientName}
-              newClientCompany={newClientCompany}
-              setNewClientCompany={setNewClientCompany}
-              newClientEmail={newClientEmail}
-              setNewClientEmail={setNewClientEmail}
-              newClientPhone={newClientPhone}
-              setNewClientPhone={setNewClientPhone}
-              newClientTaxId={newClientTaxId}
-              setNewClientTaxId={setNewClientTaxId}
-              newClientCurrency={newClientCurrency}
-              setNewClientCurrency={setNewClientCurrency}
-              newClientAddress={newClientAddress}
-              setNewClientAddress={setNewClientAddress}
-              handleAddClient={handleAddClient}
               showToast={showToast}
             />
           )}
@@ -942,25 +907,8 @@ const OwnerDashboard = () => {
               setInvoices={setInvoices}
               payments={payments}
               setPayments={setPayments}
-              builderClient={builderClient}
-              setBuilderClient={setBuilderClient}
-              builderDueDate={builderDueDate}
-              setBuilderDueDate={setBuilderDueDate}
-              newDesc={newDesc}
-              setNewDesc={setNewDesc}
-              newQty={newQty}
-              setNewQty={setNewQty}
-              newPrice={newPrice}
-              setNewPrice={setNewPrice}
-              builderItems={builderItems}
-              builderDiscount={builderDiscount}
-              setBuilderDiscount={setBuilderDiscount}
-              builderTaxRate={builderTaxRate}
-              setBuilderTaxRate={setBuilderTaxRate}
-              handleAddBuilderItem={handleAddBuilderItem}
-              handleCreateInvoice={handleCreateInvoice}
-              handleGenerateInvoicePDF={handleGenerateInvoicePDF}
               showToast={showToast}
+              user={user}
             />
           )}
 
@@ -991,6 +939,7 @@ const OwnerDashboard = () => {
               setInviteRole={setInviteRole}
               handleSendInvite={handleSendInvite}
               showToast={showToast}
+              clients={clients}
             />
           )}
 
@@ -1099,11 +1048,10 @@ const OwnerDashboard = () => {
         )}
         <button
           onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
-          className={`w-13 h-13 w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl cursor-pointer outline-none transition-all duration-300 ${
-            isQuickActionsOpen
+          className={`w-13 h-13 w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl cursor-pointer outline-none transition-all duration-300 ${isQuickActionsOpen
               ? "bg-rose-600 hover:bg-rose-700 rotate-45"
               : "bg-indigo-600 hover:bg-indigo-700"
-          } text-white`}
+            } text-white`}
           title="Quick Actions"
         >
           <span className="material-symbols-outlined text-[26px]">{isQuickActionsOpen ? "close" : "add"}</span>
@@ -1277,7 +1225,7 @@ const OwnerDashboard = () => {
                             const sizeKb = Math.round(file.size / 1024);
                             setNewPostAttachment({
                               name: file.name,
-                             size: sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`,
+                              size: sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`,
                               dataUrl: reader.result
                             });
                             showToast(`Attached file: ${file.name}!`, "success");
@@ -1324,16 +1272,6 @@ const OwnerDashboard = () => {
           </div>
         </div>
       )}
-
-      <AIAssistant
-        user={user}
-        clients={clients}
-        invoices={invoices}
-        subscriptions={subscriptions}
-        payments={payments}
-        onCreateDraftInvoice={handleCreateDraftInvoice}
-        showToast={showToast}
-      />
 
     </div>
   );

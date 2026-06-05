@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -11,7 +11,6 @@ import ReadOnlyPaymentsTab from "./readonly/ReadOnlyPaymentsTab";
 import ReadOnlyReportsTab from "./readonly/ReadOnlyReportsTab";
 import ReadOnlyNotificationsTab from "./readonly/ReadOnlyNotificationsTab";
 import ReadOnlyProfileTab from "./readonly/ReadOnlyProfileTab";
-import AIAssistant from "../../components/AIAssistant";
 
 const ReadOnlyDashboard = () => {
   const { user, logout, showToast } = useAuth();
@@ -108,6 +107,24 @@ const ReadOnlyDashboard = () => {
     const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
     safeSaveToLocalStorage(`workspace_shared_payments_${orgKey}`, JSON.stringify(payments));
   }, [payments, user]);
+
+  const allowedClientAccessIds = user?.clientAccess?.map(a => a.clientId) || [];
+  const hasClientAccessLimits = user?.clientAccess && user.clientAccess.length > 0;
+
+  const filteredClients = clients.filter(c => {
+    if (!hasClientAccessLimits) return true;
+    return allowedClientAccessIds.includes(c.id) || allowedClientAccessIds.includes(c._id);
+  });
+
+  const filteredInvoices = invoices.filter(inv => {
+    if (!hasClientAccessLimits) return true;
+    return filteredClients.some(c => c.name === inv.client || c.company === inv.client);
+  });
+
+  const filteredPayments = payments.filter(p => {
+    if (!hasClientAccessLimits) return true;
+    return filteredClients.some(c => c.name === p.client || c.company === p.client);
+  });
 
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
@@ -300,26 +317,25 @@ const ReadOnlyDashboard = () => {
           {/* Rendering active tab page */}
           {activePage === "dashboard" && (
             <ReadOnlyDashboardTab
-              invoices={invoices}
-              clients={clients}
-              payments={payments}
+              invoices={filteredInvoices}
+              clients={filteredClients}
+              payments={filteredPayments}
               handlePageChange={handlePageChange}
             />
           )}
 
           {activePage === "clients" && (
             <ReadOnlyClientsTab
-              clients={clients}
-              invoices={invoices}
+              clients={filteredClients}
+              invoices={filteredInvoices}
             />
           )}
 
           {activePage === "invoices" && (
             <ReadOnlyInvoicesTab
-              invoices={invoices}
-              setInvoices={setInvoices}
-              payments={payments}
-              setPayments={setPayments}
+              invoices={filteredInvoices}
+              clients={filteredClients}
+              payments={filteredPayments}
               user={user}
               showToast={showToast}
             />
@@ -327,22 +343,22 @@ const ReadOnlyDashboard = () => {
 
           {activePage === "subscriptions" && (
             <ReadOnlySubscriptionsTab
-              clients={clients}
+              clients={filteredClients}
             />
           )}
 
           {activePage === "payments" && (
             <ReadOnlyPaymentsTab
-              payments={payments}
+              payments={filteredPayments}
               user={user}
-              invoices={invoices}
+              invoices={filteredInvoices}
             />
           )}
 
           {activePage === "reports" && (
             <ReadOnlyReportsTab
-              invoices={invoices}
-              clients={clients}
+              invoices={filteredInvoices}
+              clients={filteredClients}
               user={user}
               showToast={showToast}
             />
@@ -365,14 +381,6 @@ const ReadOnlyDashboard = () => {
 
         </div>
       </main>
-
-      <AIAssistant
-        user={user}
-        clients={clients}
-        invoices={invoices}
-        payments={payments}
-        showToast={showToast}
-      />
 
     </div>
   );

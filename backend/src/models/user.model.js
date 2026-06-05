@@ -54,6 +54,14 @@ const userSchema = new mongoose.Schema(
       default: "member",
     },
 
+    clientAccess: [
+      {
+        clientId: { type: String },
+        clientName: { type: String },
+        role: { type: String, enum: ["admin", "member", "viewer", "none"], default: "none" }
+      }
+    ],
+
     status: {
       type: String,
       enum: ["active", "invited", "suspended"],

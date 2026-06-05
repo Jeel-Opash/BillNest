@@ -44,11 +44,21 @@ const authMiddleware = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    const User = (await import("../models/user.model.js")).default;
+    const dbUser = await User.findById(decoded.userId).select("role clientAccess status");
+    if (!dbUser || dbUser.status === "suspended") {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication failed: User account is inactive or not found",
+      });
+    }
+
     req.user = {
       userId: decoded.userId,
       organizationId: decoded.organizationId || decoded.tenantId,
       tenantId: decoded.tenantId || decoded.organizationId,
-      role: decoded.role,
+      role: dbUser.role || decoded.role,
+      clientAccess: dbUser.clientAccess || [],
       isApiKey: false,
     };
 

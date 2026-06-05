@@ -813,7 +813,8 @@ const SubscriptionsTab = ({
               {/* Invoices segment */}
               <div>
                 <h5 className="font-black text-[9px] text-slate-400 uppercase tracking-wider mb-2.5">Invoiced Balances</h5>
-                <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto border border-slate-100 rounded-2xl">
                   <table className="w-full text-left">
                     <thead className="text-[9px] font-black uppercase text-slate-400 bg-slate-50">
                       <tr>
@@ -847,12 +848,39 @@ const SubscriptionsTab = ({
                     </tbody>
                   </table>
                 </div>
+
+                {/* Mobile View */}
+                <div className="block md:hidden space-y-3">
+                  {scopedClientInvoices.length > 0 ? (
+                    scopedClientInvoices.map((inv, idx) => (
+                      <div key={idx} className="p-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-slate-900">{inv.id}</span>
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${
+                            inv.status === "paid" 
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                              : "bg-blue-50 text-blue-700 border-blue-100"
+                          }`}>{inv.status}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                          <span>Date: {inv.date}</span>
+                          <span className="text-slate-900 font-black">{formatCurrency(inv.amount)}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-slate-450 italic bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl font-bold">
+                      No invoices recorded.
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Payments Segment */}
               <div>
                 <h5 className="font-black text-[9px] text-slate-400 uppercase tracking-wider mb-2.5">Stripe Processor Transactions</h5>
-                <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto border border-slate-100 rounded-2xl">
                   <table className="w-full text-left">
                     <thead className="text-[9px] font-black uppercase text-slate-400 bg-slate-50">
                       <tr>
@@ -879,6 +907,28 @@ const SubscriptionsTab = ({
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="block md:hidden space-y-3">
+                  {scopedClientPayments.length > 0 ? (
+                    scopedClientPayments.map((p, idx) => (
+                      <div key={idx} className="p-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono font-bold text-slate-900">{p.id}</span>
+                          <span className="text-[8px] font-black uppercase text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">SUCCESS</span>
+                        </div>
+                        <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                          <span>Method: <span className="uppercase">{p.method || "card"}</span></span>
+                          <span className="text-slate-900 font-black">{formatCurrency(p.amount)}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-slate-450 italic bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl font-bold">
+                      No payments processed via Stripe.
+                    </div>
+                  )}
                 </div>
               </div>
 

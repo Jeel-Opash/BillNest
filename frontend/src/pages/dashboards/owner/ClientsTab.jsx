@@ -12,23 +12,15 @@ const ClientsTab = ({
   clients = [],
   setClients,
   invoices = [],
-  newClientName,
-  setNewClientName,
-  newClientCompany,
-  setNewClientCompany,
-  newClientEmail,
-  setNewClientEmail,
-  newClientPhone,
-  setNewClientPhone,
-  newClientTaxId,
-  setNewClientTaxId,
-  newClientCurrency,
-  setNewClientCurrency,
-  newClientAddress,
-  setNewClientAddress,
-  handleAddClient,
   showToast
 }) => {
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientCompany, setNewClientCompany] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientTaxId, setNewClientTaxId] = useState("");
+  const [newClientCurrency, setNewClientCurrency] = useState("INR");
+  const [newClientAddress, setNewClientAddress] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -151,7 +143,6 @@ const ClientsTab = ({
   return (
     <div className="flex flex-col gap-6">
       
-      {/* Title & Stats */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h3 className="font-heading text-2xl font-black text-slate-900 tracking-tight">Workspace Client Registry</h3>
@@ -161,7 +152,6 @@ const ClientsTab = ({
         </div>
       </div>
 
-      {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:shadow-md transition-shadow">
           <p className="text-slate-400 text-[10px] font-black uppercase tracking-wider mb-2">Total Active Clients</p>
@@ -188,16 +178,13 @@ const ClientsTab = ({
         </div>
       </div>
 
-      {/* Workspace search, filters and details */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Side: Client List Operations (8 columns) */}
         <div className="lg:col-span-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col gap-4">
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-2 border-b border-slate-50">
             <h4 className="font-heading text-sm font-bold text-slate-900 uppercase tracking-wider">Active Workspace Clients</h4>
             
-            {/* Search & Filter Controls */}
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-initial min-w-[160px]">
                 <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
@@ -222,7 +209,6 @@ const ClientsTab = ({
             </div>
           </div>
 
-          {/* Client Cards List */}
           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
             {filteredClients.length > 0 ? (
               filteredClients.map(c => {
@@ -242,7 +228,6 @@ const ClientsTab = ({
                     className="p-4 bg-slate-50/50 hover:bg-slate-50 border border-slate-100 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all duration-150 group"
                   >
                     <div className="flex items-center gap-3">
-                      {/* Company Avatar */}
                       <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xs flex-shrink-0">
                         {shortName}
                       </div>
@@ -270,7 +255,6 @@ const ClientsTab = ({
                         <span className="font-black text-slate-950">{formatCurrency(clientRevenue, c.currency)}</span>
                       </div>
                       
-                      {/* Action buttons visible on hover or mobile */}
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => setSelectedProfileClient(c)}
@@ -306,7 +290,6 @@ const ClientsTab = ({
           </div>
         </div>
 
-        {/* Right Side: Add New Client (4 columns) */}
         <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col gap-4">
           <div>
             <h4 className="font-heading text-sm font-bold text-slate-800 uppercase tracking-wider">Add New Client</h4>
@@ -358,68 +341,65 @@ const ClientsTab = ({
                   placeholder="+91 99000 12345" 
                   className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold transition-all outline-none" 
                   value={newClientPhone} 
-                  onChange={(e) => setNewClientPhone(e.target.value)} 
-                />
-              </div>
-              <div>
-                <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Currency</label>
-                <select 
-                  className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none cursor-pointer" 
-                  value={newClientCurrency} 
-                  onChange={(e) => setNewClientCurrency(e.target.value)}
-                >
-                  <option value="INR">INR (₹)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">GST / VAT Registration Number</label>
-              <input 
-                type="text" 
-                placeholder="e.g. 24ABCDE1234F1Z5" 
-                className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold transition-all outline-none" 
-                value={newClientTaxId} 
-                onChange={(e) => setNewClientTaxId(e.target.value)} 
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Billing Address</label>
-              <input 
-                type="text" 
-                placeholder="City, State, Zip" 
-                className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold transition-all outline-none" 
-                value={newClientAddress} 
-                onChange={(e) => setNewClientAddress(e.target.value)} 
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Status</label>
-                <select 
-                  className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none cursor-pointer" 
-                  value={newClientStatus} 
-                  onChange={(e) => setNewClientStatus(e.target.value)}
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Internal Notes</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Key account" 
-                  className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold transition-all outline-none" 
-                  value={newClientNotes} 
-                  onChange={(e) => setNewClientNotes(e.target.value)} 
-                />
-              </div>
-            </div>
+              onChange={(e) => setNewClientPhone(e.target.value)} 
+            />
+          </div>
+          <div>
+            <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Currency</label>
+            <select 
+              className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none cursor-pointer" 
+              value={newClientCurrency} 
+              onChange={(e) => setNewClientCurrency(e.target.value)}
+            >
+              <option value="INR">INR (₹)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">GST / VAT Registration Number</label>
+          <input 
+            type="text" 
+            placeholder="e.g. 24ABCDE1234F1Z5" 
+            className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold transition-all outline-none" 
+            value={newClientTaxId} 
+            onChange={(e) => setNewClientTaxId(e.target.value)} 
+          />
+        </div>
+        <div>
+          <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Billing Address</label>
+          <input 
+            type="text" 
+            placeholder="City, State, Zip" 
+            className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold transition-all outline-none" 
+            value={newClientAddress} 
+            onChange={(e) => setNewClientAddress(e.target.value)} 
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Status</label>
+            <select 
+              className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold outline-none cursor-pointer" 
+              value={newClientStatus} 
+              onChange={(e) => setNewClientStatus(e.target.value)}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Internal Notes</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Key account" 
+              className="w-full bg-slate-50/50 border border-slate-200/85 focus:border-indigo-600 focus:bg-white rounded-xl p-2.5 text-xs font-semibold transition-all outline-none" 
+              value={newClientNotes} 
+              onChange={(e) => setNewClientNotes(e.target.value)} 
+            />
+          </div>
+        </div>
 
             <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold text-xs transition-all shadow-sm outline-none cursor-pointer">
               Add Partner Workspace
@@ -429,11 +409,9 @@ const ClientsTab = ({
 
       </div>
 
-      {/* ==================== VIEW PROFILE MODAL ==================== */}
       {selectedProfileClient && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl rounded-3xl border border-slate-100 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-fade-in">
-            {/* Modal Header */}
             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-black text-sm">
@@ -464,10 +442,8 @@ const ClientsTab = ({
               </button>
             </div>
 
-            {/* Modal Content Scroll Area */}
             <div className="p-6 overflow-y-auto space-y-6 text-xs">
               
-              {/* Client Profile details grid */}
               <div>
                 <h5 className="font-extrabold text-[9px] text-slate-400 uppercase tracking-widest mb-3.5">Client Details & Registry Profile</h5>
                 <div className="grid grid-cols-2 gap-4 bg-slate-50/50 border border-slate-100 p-4 rounded-2xl">
@@ -504,7 +480,6 @@ const ClientsTab = ({
                 </div>
               </div>
 
-              {/* Financial Metrics */}
               <div>
                 <h5 className="font-extrabold text-[9px] text-slate-400 uppercase tracking-widest mb-3.5">Financial Summary & Lifespan Value</h5>
                 <div className="grid grid-cols-2 gap-4">
@@ -524,7 +499,6 @@ const ClientsTab = ({
                 </div>
               </div>
 
-              {/* Invoice List scoped to this client */}
               <div>
                 <h5 className="font-extrabold text-[9px] text-slate-400 uppercase tracking-widest mb-3.5">Client Billing History</h5>
                 <div className="overflow-x-auto border border-slate-100 rounded-2xl">
@@ -571,7 +545,6 @@ const ClientsTab = ({
 
             </div>
 
-            {/* Modal Footer */}
             <div className="p-5 bg-slate-50/70 border-t border-slate-100 flex justify-end gap-2.5">
               <button
                 onClick={() => {
@@ -593,11 +566,9 @@ const ClientsTab = ({
         </div>
       )}
 
-      {/* ==================== EDIT CLIENT MODAL ==================== */}
       {editingClient && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-3xl border border-slate-100 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-fade-in">
-            {/* Modal Header */}
             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
               <div>
                 <h4 className="font-heading text-base font-bold text-slate-900">Edit Client Registry</h4>
@@ -611,7 +582,6 @@ const ClientsTab = ({
               </button>
             </div>
 
-            {/* Form Container */}
             <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs font-semibold">
               <div>
                 <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Company Name</label>
@@ -713,7 +683,6 @@ const ClientsTab = ({
                 </div>
               </div>
 
-              {/* Modal Footer Controls inside the Form */}
               <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
                 <button
                   type="button"

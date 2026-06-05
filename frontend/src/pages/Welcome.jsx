@@ -26,7 +26,6 @@ const Welcome = () => {
 
   const [joinForm, setJoinForm] = useState({
     accessCode: "",
-    role: "member",
     message: ""
   });
 
@@ -86,7 +85,7 @@ const Welcome = () => {
           return;
         }
       }
-      
+
 
       const reqRes = await axios.get("/auth/join-requests/my");
       if (reqRes.data.success) {
@@ -170,7 +169,6 @@ const Welcome = () => {
       setLoading(true);
       const res = await axios.post("/auth/join-requests", {
         accessCode: joinForm.accessCode.trim().toUpperCase(),
-        role: joinForm.role,
         message: joinForm.message
       });
 
@@ -187,14 +185,12 @@ const Welcome = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-700 flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
-      
-      {/* Background Gradient Blurs */}
+
       <div className="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] bg-indigo-100/50 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[600px] h-[600px] bg-emerald-100/40 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-2xl z-10 flex flex-col gap-6">
-        
-        {/* Top Header */}
+
         <div className="text-center">
           <div className="flex justify-center items-center gap-2.5 mb-2">
             <span className="material-symbols-outlined text-[42px] text-indigo-600 bg-indigo-50 p-2.5 rounded-2xl shadow-sm animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -207,7 +203,6 @@ const Welcome = () => {
           </p>
         </div>
 
-        {/* Phase View: Choose */}
         {phase === "choose" && (
           <div className="bg-white border border-slate-200/60 p-8 sm:p-10 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col gap-8 transition-all duration-300">
             <div>
@@ -216,8 +211,7 @@ const Welcome = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Option A: Create Org */}
-              <div 
+              <div
                 onClick={() => setPhase("create")}
                 className="group bg-slate-50/50 hover:bg-indigo-50/20 border border-slate-200/60 hover:border-indigo-300 p-6 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 flex flex-col gap-4 shadow-sm text-left"
               >
@@ -235,8 +229,7 @@ const Welcome = () => {
                 </div>
               </div>
 
-              {/* Option B: Join Org */}
-              <div 
+              <div
                 onClick={() => setPhase("join")}
                 className="group bg-slate-50/50 hover:bg-emerald-50/20 border border-slate-200/60 hover:border-emerald-300 p-6 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 flex flex-col gap-4 shadow-sm text-left"
               >
@@ -246,7 +239,7 @@ const Welcome = () => {
                 <div>
                   <h4 className="font-bold text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">B. Join Existing Organization</h4>
                   <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
-                    Enter an active organization's unique access code, request your target privilege role (Member or Read-Only), and submit a request to their administrators.
+                    Enter an active organization's unique access code and submit a request. The Owner will assign your role upon approval.
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-black mt-auto pt-2 opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
@@ -257,8 +250,8 @@ const Welcome = () => {
 
             <div className="border-t border-slate-100 pt-6 flex justify-between items-center text-xs">
               <span className="text-slate-400 font-semibold">Signed in as {user?.email}</span>
-              <button 
-                onClick={() => logout()} 
+              <button
+                onClick={() => logout()}
                 className="text-rose-500 font-bold hover:underline flex items-center gap-1 cursor-pointer outline-none bg-transparent border-none"
               >
                 <span className="material-symbols-outlined text-[14px]">logout</span> Sign Out
@@ -267,11 +260,10 @@ const Welcome = () => {
           </div>
         )}
 
-        {/* Phase View: Create Org Flow */}
         {phase === "create" && (
           <div className="bg-white border border-slate-200/60 p-8 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] transition-all duration-300">
             <div className="flex items-center gap-3 mb-6">
-              <button 
+              <button
                 onClick={() => setPhase("choose")}
                 className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer outline-none"
               >
@@ -287,10 +279,10 @@ const Welcome = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Organization Name *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="e.g. Acme Corp" 
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Acme Corp"
                     className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.name}
                     onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })}
@@ -299,11 +291,10 @@ const Welcome = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Industry</label>
-                  <select 
+                  <select
                     className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.industry}
-                    onChange={(e) => setOrgForm({ ...orgForm, industry: e.target.value })}
-                  >
+                    onChange={(e) => setOrgForm({ ...orgForm, industry: e.target.value })}>
                     {["Technology", "Finance", "Healthcare", "Education", "E-commerce", "Marketing", "Other"].map(ind => (
                       <option key={ind} value={ind}>{ind}</option>
                     ))}
@@ -312,7 +303,7 @@ const Welcome = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Business Type</label>
-                  <select 
+                  <select
                     className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.businessType}
                     onChange={(e) => setOrgForm({ ...orgForm, businessType: e.target.value })}
@@ -325,7 +316,7 @@ const Welcome = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Country</label>
-                  <select 
+                  <select
                     className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.country}
                     onChange={(e) => setOrgForm({ ...orgForm, country: e.target.value })}
@@ -338,7 +329,7 @@ const Welcome = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Currency</label>
-                  <select 
+                  <select
                     className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.currency}
                     onChange={(e) => setOrgForm({ ...orgForm, currency: e.target.value })}
@@ -351,7 +342,7 @@ const Welcome = () => {
 
                 <div className="sm:col-span-2">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Timezone</label>
-                  <select 
+                  <select
                     className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-semibold"
                     value={orgForm.timezone}
                     onChange={(e) => setOrgForm({ ...orgForm, timezone: e.target.value })}
@@ -369,9 +360,7 @@ const Welcome = () => {
                 </div>
               </div>
 
-              <button 
-                type="submit" 
-                disabled={loading}
+              <button type="submit" disabled={loading}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-sm outline-none mt-4 border-none"
               >
                 {loading ? "Configuring Tenant Workspace..." : "Create Organization"}
@@ -381,11 +370,10 @@ const Welcome = () => {
           </div>
         )}
 
-        {/* Phase View: Join Org Flow */}
         {phase === "join" && (
           <div className="bg-white border border-slate-200/60 p-8 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] transition-all duration-300">
             <div className="flex items-center gap-3 mb-6">
-              <button 
+              <button
                 onClick={() => setPhase("choose")}
                 className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer outline-none"
               >
@@ -404,10 +392,10 @@ const Welcome = () => {
                   <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
                     vpn_key
                   </span>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="e.g. ORG-A1B2 or 4-digit code" 
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. ORG-A1B2 or 4-digit code"
                     className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all uppercase font-mono font-bold"
                     value={joinForm.accessCode}
                     onChange={(e) => setJoinForm({ ...joinForm, accessCode: e.target.value })}
@@ -416,47 +404,25 @@ const Welcome = () => {
                 <span className="text-[9px] text-slate-400 font-medium mt-1 block">Ask your organization's Owner or Admin for their 4-digit unique code.</span>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Requested Privilege Role *</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { id: "member", title: "Member", desc: "Create/Edit invoices, view active plans.", icon: "person" },
-                    { id: "read_only", title: "Read-Only", desc: "View dashboards and metrics only.", icon: "visibility" }
-                  ].map(r => {
-                    const isSel = joinForm.role === r.id;
-                    return (
-                      <div 
-                        key={r.id}
-                        onClick={() => setJoinForm({ ...joinForm, role: r.id })}
-                        className={`p-3.5 rounded-xl border cursor-pointer flex flex-col gap-2 transition-all ${
-                          isSel 
-                            ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm" 
-                            : "bg-slate-50/50 border-slate-200 hover:bg-slate-100/50 text-slate-500 hover:text-slate-800"
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <h4 className={`font-bold text-xs ${isSel ? "text-emerald-700" : "text-slate-700"}`}>{r.title}</h4>
-                          <span className="material-symbols-outlined text-[16px]">{r.icon}</span>
-                        </div>
-                        <p className="text-[9px] leading-relaxed opacity-80">{r.desc}</p>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 flex gap-2.5 items-start">
+                <span className="material-symbols-outlined text-slate-500 text-[18px] mt-0.5">info</span>
+                <p className="text-[10px] leading-relaxed text-slate-500 font-semibold">
+                  Your workspace privilege role (Member or Read-Only) and client permissions will be configured and assigned by the organization owner upon approval.
+                </p>
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Optional Introduction Message</label>
-                <textarea 
-                  placeholder="Tell the owner why you are requesting admission..." 
+                <textarea
+                  placeholder="Tell the owner why you are requesting admission..."
                   className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all h-20 resize-none font-semibold"
                   value={joinForm.message}
                   onChange={(e) => setJoinForm({ ...joinForm, message: e.target.value })}
                 />
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-sm outline-none mt-2 border-none"
               >
@@ -467,15 +433,14 @@ const Welcome = () => {
           </div>
         )}
 
-        {/* Phase View: Pending Approval Page */}
         {phase === "pending" && activePendingRequest && (
           <div className="bg-white border border-slate-200/60 p-8 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col gap-6 transition-all duration-300">
-            
+
             <div className="text-center flex flex-col items-center gap-4 py-4">
               <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200/60 flex items-center justify-center animate-pulse duration-1000">
                 <span className="material-symbols-outlined text-amber-500 text-[36px]">hourglass_empty</span>
               </div>
-              
+
               <div>
                 <span className="bg-amber-50 text-amber-600 border border-amber-200/50 text-[9px] font-black uppercase rounded-full px-3 py-1 tracking-wider inline-block select-none animate-pulse">
                   Pending Owner Approval
@@ -487,7 +452,6 @@ const Welcome = () => {
               </div>
             </div>
 
-            {/* Request Summary Info */}
             <div className="bg-slate-50/50 border border-slate-200/60 rounded-2xl p-5 space-y-3.5 text-xs text-left">
               <h4 className="font-bold text-slate-400 text-[10px] uppercase tracking-wider">Request Credentials Summary</h4>
               <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-3">
@@ -496,8 +460,8 @@ const Welcome = () => {
                   <span className="text-slate-800 font-bold mt-0.5 block">{activePendingRequest.organization?.name}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Requested Privilege</span>
-                  <span className="text-indigo-600 font-bold mt-0.5 block uppercase">{activePendingRequest.role}</span>
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Role Assignment</span>
+                  <span className="text-slate-500 italic font-semibold mt-0.5 block text-xs">Assigned by Owner upon approval</span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Submitted On</span>
@@ -516,9 +480,8 @@ const Welcome = () => {
               </div>
             </div>
 
-            {/* Status Poll Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-              <button 
+              <button
                 onClick={handleManualRefresh}
                 disabled={loading}
                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-sm outline-none border border-slate-200"
@@ -527,7 +490,7 @@ const Welcome = () => {
                 {loading ? "Checking..." : "Refresh Authorization Status"}
               </button>
 
-              <button 
+              <button
                 onClick={() => handleCancelRequest(activePendingRequest._id)}
                 disabled={loading}
                 className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-all text-xs cursor-pointer shadow-sm outline-none border border-rose-200"
@@ -539,7 +502,7 @@ const Welcome = () => {
 
             <div className="border-t border-slate-100 pt-4 flex justify-between items-center text-xs">
               <span className="text-slate-400">Need to try a different access code?</span>
-              <button 
+              <button
                 onClick={() => logout()}
                 className="text-rose-500 font-bold hover:underline flex items-center gap-1 cursor-pointer outline-none bg-transparent border-none font-sans"
               >

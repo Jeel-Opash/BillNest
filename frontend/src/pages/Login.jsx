@@ -54,10 +54,8 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex font-sans antialiased text-slate-700">
 
-      {/* ── FORM PANEL ── */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
 
-        {/* Logo */}
         <div className="absolute top-6 left-6 flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md">BN</div>
           <span className="font-bold text-slate-900 text-sm tracking-tight">BillNest</span>
@@ -65,18 +63,15 @@ const Login = () => {
 
         <div className="w-full max-w-[420px]">
 
-          {/* Page header — same typography as Register */}
           <div className="mb-8">
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Welcome back</h2>
             <p className="text-sm text-slate-400 mt-1.5">Sign in to your workspace portal.</p>
           </div>
 
-          {/* Form card — exact same bg-white border-slate-100 rounded-3xl shadow as Register */}
           <div className="bg-white border border-slate-100 rounded-3xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-8 flex flex-col gap-5">
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-              {/* Email / Username — same input style as Register */}
               <div className="space-y-1.5">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Email or Username
@@ -94,7 +89,6 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Password — same input style as Register */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Password</label>
@@ -124,7 +118,6 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Remember me — same checkbox style as Register's terms checkbox */}
               <div className="flex items-center gap-2.5 pt-0.5">
                 <input
                   type="checkbox"
@@ -138,7 +131,6 @@ const Login = () => {
                 </label>
               </div>
 
-              {/* Submit — exact same button as Register */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -159,14 +151,12 @@ const Login = () => {
 
             </form>
 
-            {/* Divider — identical to Register */}
             <div className="relative flex items-center gap-3">
               <div className="flex-1 h-px bg-slate-100" />
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">or</span>
               <div className="flex-1 h-px bg-slate-100" />
             </div>
 
-            {/* Register CTA — same footer text as Register's "Sign in" link */}
             <p className="text-center text-xs text-slate-500">
               Don't have an account?{" "}
               <Link to="/register" className="text-indigo-600 font-bold hover:underline">
@@ -176,7 +166,6 @@ const Login = () => {
 
           </div>
 
-          {/* Trust badges — identical to Register */}
           <div className="mt-6 flex items-center justify-center gap-4">
             <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100/50 text-indigo-600 rounded-full">
               <span className="material-symbols-outlined text-[14px] animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>

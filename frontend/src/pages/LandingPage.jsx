@@ -96,7 +96,6 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased overflow-x-hidden">
 
-      {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -139,7 +138,6 @@ const LandingPage = () => {
         )}
       </nav>
 
-      {/* Hero */}
       <section className="pt-32 pb-20 px-6 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-indigo-50 rounded-full blur-[120px] opacity-60 pointer-events-none" />
         <div className="max-w-5xl mx-auto text-center relative z-10">
@@ -177,7 +175,6 @@ const LandingPage = () => {
           <p className="text-xs text-slate-400 mt-6 font-semibold">No credit card required · Free forever plan available</p>
         </div>
 
-        {/* Dashboard Preview */}
         <div className="max-w-5xl mx-auto mt-16 relative z-10">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl shadow-slate-200/80 overflow-hidden">
             <div className="bg-slate-50 border-b border-slate-100 px-6 py-3 flex items-center gap-2">
@@ -224,7 +221,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Stats */}
       <section id="stats" className="py-16 bg-indigo-600">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {stats.map((s, i) => (
@@ -236,7 +232,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Features */}
       <section id="features" className="py-24 px-6 bg-slate-50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -258,7 +253,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Subscription Plans */}
       <section id="pricing" className="py-24 px-6 bg-white border-t border-slate-100">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -366,7 +360,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Invoice State Machine Visual */}
       <section className="py-24 px-6 bg-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-extrabold text-slate-900 mb-4">Smart Invoice State Machine</h2>
@@ -409,7 +402,6 @@ const LandingPage = () => {
       </section>
 
 
-      {/* CTA */}
       <section className="py-24 px-6 bg-indigo-600">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-4xl font-extrabold text-white mb-4">Ready to streamline your billing?</h2>
@@ -424,7 +416,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-12 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2.5">
@@ -439,18 +430,14 @@ const LandingPage = () => {
         </div>
       </footer>
 
-      {/* Authentication Modal Popup */}
       {showAuthModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop with backdrop-blur */}
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={() => setShowAuthModal(false)}
           />
 
-          {/* Modal Container */}
           <div className="bg-white border border-slate-100 rounded-3xl shadow-2xl w-full max-w-[420px] overflow-hidden z-10 relative animate-in fade-in zoom-in-95 duration-200">
-            {/* Close Button */}
             <button
               onClick={() => setShowAuthModal(false)}
               className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-colors"
@@ -458,7 +445,6 @@ const LandingPage = () => {
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
 
-            {/* Banner mentioning the selected plan */}
             <div className="bg-indigo-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md">BN</div>
               <div>
@@ -468,7 +454,6 @@ const LandingPage = () => {
             </div>
 
             <div className="p-6">
-              {/* Tab Switcher */}
               <div className="flex bg-slate-50 border border-slate-100 rounded-2xl p-1 mb-6">
                 <button
                   type="button"
@@ -494,7 +479,6 @@ const LandingPage = () => {
                 </button>
               </div>
 
-              {/* Login Form */}
               {authTab === "login" ? (
                 <form onSubmit={handleModalLogin} className="flex flex-col gap-4">
                   <div className="space-y-1.5">
@@ -541,7 +525,6 @@ const LandingPage = () => {
                   </button>
                 </form>
               ) : (
-                /* Register Form */
                 <form onSubmit={handleModalRegister} className="flex flex-col gap-4 max-h-[360px] overflow-y-auto pr-1">
                   <div className="space-y-1.5">
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">

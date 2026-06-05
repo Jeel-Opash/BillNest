@@ -194,10 +194,8 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
 
   useEffect(() => {
     fetchTeammates();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAccessCode();
     fetchRequestsData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -219,21 +217,6 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportRoster = () => {
-    const rows = [
-      ["Name", "Email", "Role", "Status", "Last Login"],
-      ...filteredTeamList.map((teammate) => [
-        teammate.name,
-        teammate.email,
-        ROLE_LABELS[normalizeRole(teammate.role)] || teammate.role,
-        teammate.status || "active",
-        teammate.lastLogin
-      ])
-    ];
-
-    downloadCsv(`billnest-team-roster-${new Date().toISOString().slice(0, 10)}.csv`, rows);
-    showToast("Filtered roster exported as CSV.", "success");
-  };
 
   const handleExportRequestHistory = () => {
     const rows = [
@@ -359,14 +342,12 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
   return (
     <div className="flex flex-col gap-6">
       
-      {/* Header section with Stats Cards */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h3 className="font-heading text-2xl font-bold text-slate-900">Team Management Center</h3>
           <p className="text-slate-500 text-sm mt-1">
             Generate access codes, manage active teammates, and approve or reject join requests in real time.
           </p>
-          
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -378,22 +359,11 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
             <span className={`material-symbols-outlined text-[16px] ${isRefreshingTeam ? "animate-spin" : ""}`}>sync</span>
             Refresh
           </button>
-          <button
-            type="button"
-            onClick={handleExportRoster}
-            disabled={teamList.length === 0}
-            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 transition-all"
-          >
-            <span className="material-symbols-outlined text-[16px]">download</span>
-            Export Roster
-          </button>
         </div>
       </div>
 
-      {/* Access Code and Statistics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Statistics Block */}
         <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col justify-between">
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Team</span>
@@ -494,195 +464,181 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
           {activeSubTab === "members" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
-              <div className="lg:col-span-8 space-y-4">
-                <div className="flex flex-col gap-3 mb-2">
-                  <div className="flex justify-between items-center gap-3">
-                    <h4 className="font-heading text-sm font-bold text-slate-800">Workspace Active Roster</h4>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Scope: {user?.organization?.name}</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-                    <div className="md:col-span-5 relative">
-                      <span className="material-symbols-outlined text-[17px] text-slate-400 absolute left-3 top-1/2 -translate-y-1/2">search</span>
-                      <input
-                        type="search"
-                        value={rosterSearch}
-                        onChange={(e) => setRosterSearch(e.target.value)}
-                        placeholder="Search teammate or email"
-                        className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 pl-9 pr-3 text-xs font-semibold outline-none transition-all"
-                      />
-                    </div>
-
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value)}
-                      className="md:col-span-2 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="owner">Owner</option>
-                      <option value="admin">Admin</option>
-                      <option value="member">Member</option>
-                      <option value="read_only">Read Only</option>
-                    </select>
-
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="md:col-span-2 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="pending">Pending</option>
-                    </select>
-
-                    <select
-                      value={sortMode}
-                      onChange={(e) => setSortMode(e.target.value)}
-                      className="md:col-span-3 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
-                    >
-                      <option value="role">Sort by Privilege</option>
-                      <option value="name">Sort by Name</option>
-                      <option value="lastLogin">Sort by Recent Login</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[
-                      ["Owners", teamInsights.roleCounts.owner || 0, "text-indigo-700"],
-                      ["Admins", teamInsights.roleCounts.admin || 0, "text-amber-700"],
-                      ["Members", teamInsights.roleCounts.member || 0, "text-slate-700"],
-                      ["Read Only", teamInsights.roleCounts.read_only || 0, "text-teal-700"]
-                    ].map(([label, value, color]) => (
-                      <div key={label} className="bg-white border border-slate-100 rounded-xl px-3 py-2 shadow-sm">
-                        <span className="block text-[9px] text-slate-400 font-black uppercase tracking-wider">{label}</span>
-                        <span className={`text-sm font-black ${color}`}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {teamList.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-6">No teammates registered in this workspace yet.</p>
-                ) : filteredTeamList.length === 0 ? (
-                  <div className="text-center py-8 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
-                    <span className="material-symbols-outlined text-[34px] text-slate-300">person_search</span>
-                    <p className="text-xs text-slate-500 font-bold mt-1">No teammates match these filters.</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRosterSearch("");
-                        setRoleFilter("all");
-                        setStatusFilter("all");
-                      }}
-                      className="mt-3 text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-wider"
-                    >
-                      Clear Filters
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {filteredTeamList.map(t => {
-                      const initials = t.name.split(" ").map(w => w.charAt(0)).join("").substring(0, 2).toUpperCase();
-                      const isRemoving = removingMemberId === t.id;
-                      return (
-                        <div key={t.id} className="p-4 bg-slate-50/40 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-200/80 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600 font-extrabold text-xs flex items-center justify-center flex-shrink-0 shadow-sm border border-indigo-100/30">
-                              {initials}
-                            </div>
-                            <div>
-                              <h5 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                                {t.name}
-                                {t.role === "owner" && <span className="bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase px-1 py-0.2 rounded shadow-sm">Owner</span>}
-                              </h5>
-                              <p className="text-[10px] text-slate-500">{t.email}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-6 text-xs w-full sm:w-auto justify-between sm:justify-end flex-1 sm:flex-initial">
-                            <div>
-                              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Privilege Role</span>
-                              {t.role === "owner" ? (
-                                renderRoleBadge(t.role)
-                              ) : (
-                                <select
-                                  value={t.role}
-                                  onChange={(e) => handleUpdateTeammateRole(t.id, e.target.value)}
-                                  className="bg-white border border-slate-200 focus:border-indigo-600 rounded-lg py-1 px-2.5 text-xs font-semibold outline-none cursor-pointer text-slate-700 transition-colors shadow-sm"
-                                >
-                                  <option value="admin">Admin</option>
-                                  <option value="member">Member</option>
-                                  <option value="read_only">Read Only</option>
-                                </select>
-                              )}
-                            </div>
-
-                            <div className="text-left sm:text-right">
-                              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Last Login</span>
-                              <span className="text-slate-600 font-bold">{t.lastLogin}</span>
-                            </div>
-
-                            <div className="text-left sm:text-right">
-                              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">Status</span>
-                              <span className={`inline-flex items-center gap-1 font-bold capitalize ${
-                                t.status === "inactive" ? "text-slate-500" : t.status === "pending" ? "text-amber-700" : "text-emerald-700"
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${
-                                  t.status === "inactive" ? "bg-slate-400" : t.status === "pending" ? "bg-amber-500" : "bg-emerald-500 animate-ping"
-                                }`}></span>
-                                {t.status || "active"}
-                              </span>
-                            </div>
-
-                            {t.role !== "owner" && (
-                              <button
-                                onClick={() => handleDeleteTeammate(t.id, t.name)}
-                                disabled={isRemoving}
-                                className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-auto sm:ml-0 cursor-pointer disabled:opacity-50"
-                                title="Revoke Admission & Remove"
-                              >
-                                <span className={`material-symbols-outlined text-[20px] ${isRemoving ? "animate-spin" : ""}`}>
-                                  {isRemoving ? "progress_activity" : "person_remove"}
-                                </span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+          <div className="lg:col-span-8 space-y-4">
+            <div className="flex flex-col gap-3 mb-2">
+              <div className="flex justify-between items-center gap-3">
+                <h4 className="font-heading text-sm font-bold text-slate-800">Workspace Active Roster</h4>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Scope: {user?.organization?.name}</span>
               </div>
-
-              {/* Invite Teammate Card */}
-              <div className="lg:col-span-4 space-y-4">
-                <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col gap-4">
-                  <div>
-                    <h4 className="font-heading text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-indigo-600 text-[20px]">person_add</span>
-                      Invite New Teammate
-                    </h4>
-                    <p className="text-slate-400 text-[10px] mt-1 leading-relaxed">
-                      Dispatch role-based invitation credentials. Invitee receives a link to configure their account under your organization namespace.
-                    </p>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                <div className="md:col-span-5 relative">
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 absolute left-3 top-1/2 -translate-y-1/2">search</span>
+                  <input
+                    type="search"
+                    value={rosterSearch}
+                    onChange={(e) => setRosterSearch(e.target.value)}
+                    placeholder="Search teammate or email"
+                    className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 pl-9 pr-3 text-xs font-semibold outline-none transition-all"
+                  />
+                </div>
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="md:col-span-2 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="owner">Owner</option>
+                  <option value="admin">Admin</option>
+                  <option value="member">Member</option>
+                  <option value="read_only">Read Only</option>
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="md:col-span-2 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending">Pending</option>
+                </select>
+                <select
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value)}
+                  className="md:col-span-3 bg-white border border-slate-200 focus:border-indigo-600 rounded-xl py-2.5 px-3 text-xs font-bold outline-none cursor-pointer"
+                >
+                  <option value="role">Sort by Privilege</option>
+                  <option value="name">Sort by Name</option>
+                  <option value="lastLogin">Sort by Recent Login</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  ["Owners", teamInsights.roleCounts.owner || 0, "text-indigo-700"],
+                  ["Admins", teamInsights.roleCounts.admin || 0, "text-amber-700"],
+                  ["Members", teamInsights.roleCounts.member || 0, "text-slate-700"],
+                  ["Read Only", teamInsights.roleCounts.read_only || 0, "text-teal-700"]
+                ].map(([label, value, color]) => (
+                  <div key={label} className="bg-white border border-slate-100 rounded-xl px-3 py-2 shadow-sm">
+                    <span className="block text-[9px] text-slate-400 font-black uppercase tracking-wider">{label}</span>
+                    <span className={`text-sm font-black ${color}`}>{value}</span>
                   </div>
-
-                  <form onSubmit={handleInviteSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Email Address</label>
-                      <input
-                        required
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="teammate@company.com"
-                        className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl p-3 text-xs font-semibold outline-none transition-all"
-                      />
+                ))}
+              </div>
+            </div>
+            {teamList.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-6">No teammates registered in this workspace yet.</p>
+            ) : filteredTeamList.length === 0 ? (
+              <div className="text-center py-8 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+                <span className="material-symbols-outlined text-[34px] text-slate-300">person_search</span>
+                <p className="text-xs text-slate-500 font-bold mt-1">No teammates match these filters.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRosterSearch("");
+                    setRoleFilter("all");
+                    setStatusFilter("all");
+                  }}
+                  className="mt-3 text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-wider"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredTeamList.map(t => {
+                  const initials = t.name.split(" ").map(w => w.charAt(0)).join("").substring(0, 2).toUpperCase();
+                  const isRemoving = removingMemberId === t.id;
+                  return (
+                    <div key={t.id} className="p-4 bg-slate-50/40 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-200/80 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600 font-extrabold text-xs flex items-center justify-center flex-shrink-0 shadow-sm border border-indigo-100/30">
+                          {initials}
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                            {t.name}
+                            {t.role === "owner" && <span className="bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase px-1 py-0.2 rounded shadow-sm">Owner</span>}
+                          </h5>
+                          <p className="text-[10px] text-slate-500">{t.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-6 text-xs w-full sm:w-auto justify-between sm:justify-end flex-1 sm:flex-initial">
+                        <div>
+                          <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Privilege Role</span>
+                          {t.role === "owner" ? (
+                            renderRoleBadge(t.role)
+                          ) : (
+                            <select
+                              value={t.role}
+                              onChange={(e) => handleUpdateTeammateRole(t.id, e.target.value)}
+                              className="bg-white border border-slate-200 focus:border-indigo-600 rounded-lg py-1 px-2.5 text-xs font-semibold outline-none cursor-pointer text-slate-700 transition-colors shadow-sm"
+                            >
+                              <option value="admin">Admin</option>
+                              <option value="member">Member</option>
+                              <option value="read_only">Read Only</option>
+                            </select>
+                          )}
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Last Login</span>
+                          <span className="text-slate-600 font-bold">{t.lastLogin}</span>
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">Status</span>
+                          <span className={`inline-flex items-center gap-1 font-bold capitalize ${
+                            t.status === "inactive" ? "text-slate-500" : t.status === "pending" ? "text-amber-700" : "text-emerald-700"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              t.status === "inactive" ? "bg-slate-400" : t.status === "pending" ? "bg-amber-500" : "bg-emerald-500 animate-ping"
+                            }`}></span>
+                            {t.status || "active"}
+                          </span>
+                        </div>
+                        {t.role !== "owner" && (
+                          <button
+                            onClick={() => handleDeleteTeammate(t.id, t.name)}
+                            disabled={isRemoving}
+                            className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-auto sm:ml-0 cursor-pointer disabled:opacity-50"
+                            title="Revoke Admission & Remove"
+                          >
+                            <span className={`material-symbols-outlined text-[20px] ${isRemoving ? "animate-spin" : ""}`}>
+                              {isRemoving ? "progress_activity" : "person_remove"}
+                            </span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-
-                    <div>
-                      <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Privilege Role</label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="lg:col-span-4 space-y-4">
+            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col gap-4">
+              <div>
+                <h4 className="font-heading text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-indigo-600 text-[20px]">person_add</span>
+                  Invite New Teammate
+                </h4>
+                <p className="text-slate-400 text-[10px] mt-1 leading-relaxed">
+                  Dispatch role-based invitation credentials. Invitee receives a link to configure their account under your organization namespace.
+                </p>
+              </div>
+              <form onSubmit={handleInviteSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Email Address</label>
+                  <input
+                    required
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="teammate@company.com"
+                    className="w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl p-3 text-xs font-semibold outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Privilege Role</label>
                       <select
                         value={inviteRole}
                         onChange={(e) => setInviteRole(e.target.value)}
@@ -720,7 +676,6 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
             </div>
           )}
 
-          {/* PENDING JOIN REQUESTS */}
           {activeSubTab === "requests" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-2">
@@ -806,7 +761,6 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
             </div>
           )}
 
-          {/* REQUEST HISTORY LEDGER */}
           {activeSubTab === "history" && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
@@ -891,12 +845,9 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
 
       </div>
 
-      {/* Action Processing Modal (Approve/Reject) */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
-            
-            {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h5 className="font-heading font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-indigo-600">
@@ -912,11 +863,8 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
               </button>
             </div>
 
-            {/* Modal Form */}
             <form onSubmit={handleProcessSubmit}>
               <div className="p-6 space-y-4">
-                
-                {/* User Preview details */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
                     {selectedRequest.user?.name ? selectedRequest.user.name.charAt(0).toUpperCase() : "?"}
@@ -958,7 +906,6 @@ const TeamTab = ({ teamList, setTeamList, showToast }) => {
 
               </div>
 
-              {/* Modal Footer */}
               <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
                 <button
                   type="button"

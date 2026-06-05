@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const features = [
   { icon: "receipt_long", title: "Smart Invoice Builder", desc: "Create professional invoices with line items, tax, discounts, and auto-numbering. Send via email with one click." },
@@ -20,6 +21,77 @@ const stats = [
 const LandingPage = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, login, register, showToast } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authTab, setAuthTab] = useState("login");
+  const [selectedPlan, setSelectedPlan] = useState(null);
+
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePlanSelect = (planId) => {
+    if (user) {
+      navigate("/dashboard");
+    } else {
+      setSelectedPlan(planId);
+      setAuthTab("login");
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleModalLogin = async (e) => {
+    e.preventDefault();
+    if (!identifier || !password) {
+      showToast("Email/Username and password are required.", "error");
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      const res = await login(identifier, password);
+      if (res.success) {
+        showToast("Welcome back!", "success");
+        setShowAuthModal(false);
+        if (res.user && !res.user.organization) {
+          navigate("/welcome");
+        } else {
+          navigate("/dashboard");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleModalRegister = async (e) => {
+    e.preventDefault();
+    if (!fullName || !username || !email || !password) {
+      showToast("All fields are required.", "error");
+      return;
+    }
+    if (password.length < 6) {
+      showToast("Password must be at least 6 characters.", "warning");
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      const res = await register(fullName, username, email, password);
+      if (res.success) {
+        showToast("Account registered! Welcome to BillNest.", "success");
+        setShowAuthModal(false);
+        navigate("/welcome");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased overflow-x-hidden">
@@ -36,6 +108,7 @@ const LandingPage = () => {
 
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#features" className="hover:text-indigo-600 transition-colors">Features</a>
+            <a href="#pricing" className="hover:text-indigo-600 transition-colors">Pricing Plans</a>
             <a href="#stats" className="hover:text-indigo-600 transition-colors">About</a>
           </div>
 
@@ -59,6 +132,7 @@ const LandingPage = () => {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 flex flex-col gap-4">
             <a href="#features" className="text-sm font-semibold text-slate-600 hover:text-indigo-600" onClick={() => setMobileMenuOpen(false)}>Features</a>
+            <a href="#pricing" className="text-sm font-semibold text-slate-600 hover:text-indigo-600" onClick={() => setMobileMenuOpen(false)}>Pricing Plans</a>
             <Link to="/login" className="text-sm font-bold text-slate-600">Sign In</Link>
             <Link to="/register" className="bg-indigo-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl text-center">Get Started Free</Link>
           </div>
@@ -184,6 +258,114 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Subscription Plans */}
+      <section id="pricing" className="py-24 px-6 bg-white border-t border-slate-100">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-3">
+              Pricing Plans
+            </div>
+            <h2 className="text-4xl font-extrabold text-slate-900 mb-4">Choose the right plan for your business</h2>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto">Simple, transparent pricing. Scale your billing operations with confidence.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                id: "starter",
+                name: "Starter",
+                price: "₹1,999",
+                period: "/month",
+                desc: "Essential features for freelancers and small teams starting their journey.",
+                features: [
+                  "5 Active Clients",
+                  "50 Invoices / Month",
+                  "Standard PDF Templates",
+                  "Stripe Integration (Test Mode)",
+                  "Email Support"
+                ],
+                buttonText: "Get Started",
+                popular: false,
+                color: "border-slate-200 bg-white"
+              },
+              {
+                id: "growth",
+                name: "Growth",
+                price: "₹4,999",
+                period: "/month",
+                desc: "Advanced tooling for growing startups needing robust role management.",
+                features: [
+                  "Unlimited Clients",
+                  "500 Invoices / Month",
+                  "Premium Custom Branding",
+                  "Priority Email & Chat Support",
+                  "Role-Based Access (Owner, Admin, Member)"
+                ],
+                buttonText: "Choose Growth",
+                popular: true,
+                color: "border-indigo-600 bg-white shadow-xl shadow-indigo-100/50 relative"
+              },
+              {
+                id: "enterprise",
+                name: "Enterprise",
+                price: "₹12,999",
+                period: "/month",
+                desc: "High volume solutions for large teams with custom compliance requirements.",
+                features: [
+                  "Unlimited Invoices",
+                  "Dedicated Tenant Database",
+                  "API Access & Webhooks",
+                  "24/7 Phone Support",
+                  "SLA Guarantee"
+                ],
+                buttonText: "Contact Sales",
+                popular: false,
+                color: "border-slate-800 bg-slate-900 text-white"
+              }
+            ].map((plan) => (
+              <div
+                key={plan.id}
+                className={`rounded-3xl border p-8 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${plan.color}`}
+              >
+                {plan.popular && (
+                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                    Most Popular
+                  </span>
+                )}
+                <div>
+                  <h3 className={`text-xl font-bold ${plan.id === "enterprise" ? "text-white" : "text-slate-900"} mb-2`}>{plan.name}</h3>
+                  <p className={`text-xs ${plan.id === "enterprise" ? "text-slate-400" : "text-slate-400"} leading-relaxed mb-6`}>{plan.desc}</p>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className={`text-4xl font-extrabold ${plan.id === "enterprise" ? "text-white" : "text-slate-900"}`}>{plan.price}</span>
+                    <span className={`text-xs font-semibold ${plan.id === "enterprise" ? "text-slate-400" : "text-slate-500"}`}>{plan.period}</span>
+                  </div>
+                  <ul className="space-y-4 mb-8">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-center gap-3 text-xs font-semibold">
+                        <span className={`material-symbols-outlined text-[16px] ${plan.id === "enterprise" ? "text-indigo-400" : "text-indigo-600"}`}>check_circle</span>
+                        <span className={plan.id === "enterprise" ? "text-slate-300" : "text-slate-600"}>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <button
+                  onClick={() => handlePlanSelect(plan.id)}
+                  className={`w-full py-3.5 rounded-2xl text-xs font-extrabold tracking-wider uppercase transition-all duration-200 ${
+                    plan.id === "enterprise"
+                      ? "bg-white text-slate-900 hover:bg-indigo-50"
+                      : plan.popular
+                      ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
+                      : "bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700"
+                  }`}
+                >
+                  {plan.buttonText}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Invoice State Machine Visual */}
       <section className="py-24 px-6 bg-white">
         <div className="max-w-4xl mx-auto text-center">
@@ -256,6 +438,193 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Authentication Modal Popup */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop with backdrop-blur */}
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity cursor-pointer"
+            onClick={() => setShowAuthModal(false)}
+          />
+
+          {/* Modal Container */}
+          <div className="bg-white border border-slate-100 rounded-3xl shadow-2xl w-full max-w-[420px] overflow-hidden z-10 relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+
+            {/* Banner mentioning the selected plan */}
+            <div className="bg-indigo-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md">BN</div>
+              <div>
+                <p className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider">Plan Selected</p>
+                <p className="text-xs font-black text-slate-800 capitalize">{selectedPlan} Plan</p>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Tab Switcher */}
+              <div className="flex bg-slate-50 border border-slate-100 rounded-2xl p-1 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setAuthTab("login")}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    authTab === "login"
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuthTab("register")}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    authTab === "register"
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Create Account
+                </button>
+              </div>
+
+              {/* Login Form */}
+              {authTab === "login" ? (
+                <form onSubmit={handleModalLogin} className="flex flex-col gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Email or Username
+                    </label>
+                    <div className="relative border border-slate-200 focus-within:border-indigo-500 rounded-xl bg-slate-50/50 transition-colors">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">person</span>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Email address or username"
+                        className="w-full pl-9 pr-4 py-2.5 bg-transparent text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none rounded-xl"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Password
+                    </label>
+                    <div className="relative border border-slate-200 focus-within:border-indigo-500 rounded-xl bg-slate-50/50 transition-colors">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">lock</span>
+                      <input
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        className="w-full pl-9 pr-4 py-2.5 bg-transparent text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none rounded-xl"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-extrabold tracking-wider uppercase transition-colors shadow-md shadow-indigo-100 flex items-center justify-center gap-2 mt-2 disabled:opacity-70 font-sans"
+                  >
+                    {isSubmitting ? "Signing In..." : "Sign In & Subscribe"}
+                    <span className="material-symbols-outlined text-[16px]">login</span>
+                  </button>
+                </form>
+              ) : (
+                /* Register Form */
+                <form onSubmit={handleModalRegister} className="flex flex-col gap-4 max-h-[360px] overflow-y-auto pr-1">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Full Name
+                    </label>
+                    <div className="relative border border-slate-200 focus-within:border-indigo-500 rounded-xl bg-slate-50/50 transition-colors">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">person</span>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Jeel Opash"
+                        className="w-full pl-9 pr-4 py-2.5 bg-transparent text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none rounded-xl"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Username
+                    </label>
+                    <div className="relative border border-slate-200 focus-within:border-indigo-500 rounded-xl bg-slate-50/50 transition-colors">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">alternate_email</span>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. jeelopash"
+                        className="w-full pl-9 pr-4 py-2.5 bg-transparent text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none rounded-xl"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Email Address
+                    </label>
+                    <div className="relative border border-slate-200 focus-within:border-indigo-500 rounded-xl bg-slate-50/50 transition-colors">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">mail</span>
+                      <input
+                        type="email"
+                        required
+                        placeholder="you@domain.com"
+                        className="w-full pl-9 pr-4 py-2.5 bg-transparent text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none rounded-xl"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Password
+                    </label>
+                    <div className="relative border border-slate-200 focus-within:border-indigo-500 rounded-xl bg-slate-50/50 transition-colors">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">lock</span>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Min. 6 characters"
+                        className="w-full pl-9 pr-4 py-2.5 bg-transparent text-xs font-semibold placeholder-slate-400 text-slate-700 outline-none rounded-xl"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-extrabold tracking-wider uppercase transition-colors shadow-md shadow-indigo-100 flex items-center justify-center gap-2 mt-2 disabled:opacity-70 font-sans"
+                  >
+                    {isSubmitting ? "Creating..." : "Sign Up & Subscribe"}
+                    <span className="material-symbols-outlined text-[16px]">person_add</span>
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -11,9 +11,8 @@ import SubscriptionsTab from "./owner/SubscriptionsTab";
 import PaymentsTab from "./owner/PaymentsTab";
 import ReportsTab from "./owner/ReportsTab";
 import SettingsTab from "./owner/SettingsTab";
-import IntegrationsTab from "./owner/IntegrationsTab";
 import NotificationsTab from "./owner/NotificationsTab";
-import AuditLogsTab from "./owner/AuditLogsTab";
+import AIAssistant from "../../components/AIAssistant";
 
 const OwnerDashboard = () => {
   const { user, logout, showToast, addLocalInvitation } = useAuth();
@@ -210,6 +209,23 @@ const OwnerDashboard = () => {
   const [newQty, setNewQty] = useState(1);
   const [newPrice, setNewPrice] = useState(0);
 
+  const handleCreateDraftInvoice = (clientName, amount) => {
+    const nextId = `INV-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newInv = {
+      id: nextId,
+      client: clientName,
+      amount: Number(amount),
+      date: new Date().toISOString().split("T")[0],
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      status: "draft",
+      items: [{ desc: "AI Copilot Created Billing Line", qty: 1, price: Number(amount) }]
+    };
+    const updated = [newInv, ...invoices];
+    setInvoices(updated);
+    safeSaveToLocalStorage(`workspace_${user?.email || "guest"}_invoices`, JSON.stringify(updated));
+    showToast(`Invoice draft ${nextId} created for ${clientName}!`, "success");
+    navigate("/dashboard/invoices");
+  };
 
   const [subscriptions, setSubscriptions] = useState(() => {
     try {
@@ -247,7 +263,8 @@ const OwnerDashboard = () => {
 
   const [payments, setPayments] = useState(() => {
     try {
-      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_payments`);
+      const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+      const saved = localStorage.getItem(`workspace_shared_payments_${orgKey}`);
       return saved ? JSON.parse(saved) : [
         { id: "TXN-90241", invoice: "INV-1023", client: "Pixel Creative Labs", method: "Stripe Card", amount: 15000, status: "succeeded", date: "2026-05-20" },
         { id: "TXN-90240", invoice: "INV-1022", client: "Nova Software Inc", method: "Stripe Card", amount: 5000, status: "failed", date: "2026-05-15" }
@@ -258,7 +275,8 @@ const OwnerDashboard = () => {
   });
 
   useEffect(() => {
-    safeSaveToLocalStorage(`workspace_${user?.email || "guest"}_payments`, JSON.stringify(payments));
+    const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+    safeSaveToLocalStorage(`workspace_shared_payments_${orgKey}`, JSON.stringify(payments));
   }, [payments, user]);
 
 
@@ -726,10 +744,8 @@ const OwnerDashboard = () => {
             {
               title: "SYSTEM",
               items: [
-                { id: "integrations", label: "Integrations", symbol: "key" },
                 { id: "settings", label: "Settings", symbol: "settings" },
-                { id: "notifications", label: `Notifications (${notifications.filter(n => !n.read).length})`, symbol: "notifications" },
-                { id: "audit", label: "Audit Logs", symbol: "terminal" }
+                { id: "notifications", label: `Notifications (${notifications.filter(n => !n.read).length})`, symbol: "notifications" }
               ]
             }
           ].map((group, gIdx) => (
@@ -956,6 +972,7 @@ const OwnerDashboard = () => {
               setSubscriptions={setSubscriptions}
               invoices={invoices}
               payments={payments}
+              setPayments={setPayments}
               showToast={showToast}
             />
           )}
@@ -973,13 +990,6 @@ const OwnerDashboard = () => {
               inviteRole={inviteRole}
               setInviteRole={setInviteRole}
               handleSendInvite={handleSendInvite}
-              showToast={showToast}
-            />
-          )}
-
-          {activePage === "integrations" && (
-            <IntegrationsTab
-              user={user}
               showToast={showToast}
             />
           )}
@@ -1062,18 +1072,6 @@ const OwnerDashboard = () => {
             />
           )}
 
-          {activePage === "audit" && (
-            <AuditLogsTab
-              user={user}
-              showToast={showToast}
-              clients={clients}
-              invoices={invoices}
-              payments={payments}
-              teamList={teamList}
-              subscriptions={subscriptions}
-            />
-          )}
-
         </div>
       </main>
 
@@ -1085,7 +1083,6 @@ const OwnerDashboard = () => {
               { label: "New Invoice", icon: "receipt_long", page: "invoices", color: "bg-indigo-600 hover:bg-indigo-700" },
               { label: "Add Client", icon: "person_add", page: "clients", color: "bg-emerald-600 hover:bg-emerald-700" },
               { label: "Payments", icon: "payments", page: "payments", color: "bg-violet-600 hover:bg-violet-700" },
-              { label: "Audit Logs", icon: "terminal", page: "audit", color: "bg-rose-600 hover:bg-rose-700" },
               { label: "Reports", icon: "monitoring", page: "reports", color: "bg-amber-500 hover:bg-amber-600" },
               { label: "Settings", icon: "settings", page: "settings", color: "bg-slate-700 hover:bg-slate-800" },
             ].map((action) => (
@@ -1327,6 +1324,16 @@ const OwnerDashboard = () => {
           </div>
         </div>
       )}
+
+      <AIAssistant
+        user={user}
+        clients={clients}
+        invoices={invoices}
+        subscriptions={subscriptions}
+        payments={payments}
+        onCreateDraftInvoice={handleCreateDraftInvoice}
+        showToast={showToast}
+      />
 
     </div>
   );

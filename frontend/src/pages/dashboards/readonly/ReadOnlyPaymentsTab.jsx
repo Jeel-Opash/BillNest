@@ -8,7 +8,7 @@ const formatCurrency = (val, currency = "INR") => {
   }).format(val);
 };
 
-const ReadOnlyPaymentsTab = ({ payments = [], user }) => {
+const ReadOnlyPaymentsTab = ({ payments = [], user, invoices = [] }) => {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedStripeLog, setSelectedStripeLog] = useState(null);
 
@@ -105,13 +105,22 @@ const ReadOnlyPaymentsTab = ({ payments = [], user }) => {
   return (
     <div className="space-y-6">
 
-      {/* Constraints banner */}
-      <div className="p-4 bg-slate-50 border border-slate-200 rounded-3xl flex items-start gap-3 select-none">
-        <span className="material-symbols-outlined text-[20px] text-slate-500 mt-0.5">lock_outline</span>
-        <div>
-          <h5 className="font-heading text-xs font-black text-slate-700 uppercase tracking-wide">Transactional Gateways Constraints</h5>
-          <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-0.5">
-            Your observer credentials allow complete inspection of Stripe records. Manually retrying failed checkouts or processing client refunds is restricted.
+      {/* Role Context Explainer Banner */}
+      <div className="p-4 bg-gradient-to-r from-slate-50 to-indigo-50/20 border border-slate-200 rounded-3xl flex items-start gap-3 shadow-[0_1px_3px_rgba(0,0,0,0.01)] select-none animate-fade-in">
+        <div className="w-8 h-8 rounded-xl bg-indigo-650/10 text-indigo-750 flex items-center justify-center flex-shrink-0 font-bold">
+          <span className="material-symbols-outlined text-[18px]">verified_user</span>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-650 text-white leading-none">
+              ReadOnly Console
+            </span>
+            <h5 className="font-heading text-xs font-black text-slate-700 uppercase tracking-wide">
+              Transactional Gateways Constraints & Auditing
+            </h5>
+          </div>
+          <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-1">
+            You are operating in the <strong>Read-Only Compliance Auditor</strong> context. Transactions below reflect standard B2B client payments routed from the <strong>Payer (Client Target)</strong> to the <strong>Receiver ({user?.organization?.name || "Workspace Organization"})</strong>. Manually retrying failed checkouts, processing client refunds, or altering ledger entries is restricted.
           </p>
         </div>
       </div>
@@ -171,7 +180,8 @@ const ReadOnlyPaymentsTab = ({ payments = [], user }) => {
               <thead>
                 <tr className="border-b border-slate-100">
                   <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Transaction ID</th>
-                  <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Client Target</th>
+                  <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Payer (Client)</th>
+                  <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Receiver (Workspace)</th>
                   <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Gateway Method</th>
                   <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Stamp Date</th>
                   <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Amount</th>
@@ -182,7 +192,7 @@ const ReadOnlyPaymentsTab = ({ payments = [], user }) => {
               <tbody className="divide-y divide-slate-50">
                 {filteredPayments.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="py-8 text-center text-slate-400">
+                    <td colSpan="8" className="py-8 text-center text-slate-400">
                       No matching payments registered.
                     </td>
                   </tr>
@@ -195,7 +205,24 @@ const ReadOnlyPaymentsTab = ({ payments = [], user }) => {
                     return (
                       <tr key={p.id || idx} className="hover:bg-slate-50/50 transition-colors">
                         <td className="py-3.5 font-bold text-slate-900">{p.id}</td>
-                        <td className="py-3.5 text-slate-800">{p.client}</td>
+                        <td className="py-3.5">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px] text-indigo-500">upload_file</span>
+                              {p.client}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Payer (Outflow)</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px] text-emerald-500">download_for_offline</span>
+                              {user?.organization?.name || "CodeCraft Agency"}
+                            </span>
+                            <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Receiver (Inflow)</span>
+                          </div>
+                        </td>
                         <td className="py-3.5 text-slate-500 font-bold uppercase tracking-wider text-[9px]">{p.method || "Stripe Card"}</td>
                         <td className="py-3.5 text-slate-400">{p.date}</td>
                         <td className="py-3.5 font-black text-slate-900">{formatCurrency(p.amount)}</td>

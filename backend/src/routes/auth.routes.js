@@ -8,10 +8,6 @@ import {
   logout,
   inviteTeammate,
   acceptInvitation,
-  createApiKey,
-  getApiKeys,
-  deleteApiKey,
-  getAuditLogs,
   getTeamMembers,
   updateRole,
   searchOrganizationsController,
@@ -51,7 +47,6 @@ router.delete("/join-requests/:id", authMiddleware, cancelJoinRequestController)
 
 
 router.post("/invite", authMiddleware, roleMiddleware("owner", "admin"), inviteTeammate);
-router.get("/audit-logs", authMiddleware, roleMiddleware("owner", "admin"), getAuditLogs);
 router.get("/team/members", authMiddleware, getTeamMembers);
 
 
@@ -63,10 +58,5 @@ router.get("/join-requests/history", authMiddleware, roleMiddleware("owner", "ad
 router.post("/join-requests/:id/action", authMiddleware, roleMiddleware("owner", "admin"), processJoinRequestController);
 router.get("/organization/code", authMiddleware, roleMiddleware("owner", "admin"), getAccessCodeController);
 router.post("/organization/regenerate-code", authMiddleware, roleMiddleware("owner", "admin"), regenerateAccessCodeController);
-
-
-router.post("/api-keys", authMiddleware, roleMiddleware("owner", "admin"), createApiKey);
-router.get("/api-keys", authMiddleware, roleMiddleware("owner", "admin"), getApiKeys);
-router.delete("/api-keys/:id", authMiddleware, roleMiddleware("owner", "admin"), deleteApiKey);
 
 export default router;

@@ -42,17 +42,14 @@ const StripeCheckoutModal = ({
   const [zip, setZip] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Simulation states
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("idle"); // idle | success | error
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    // Autocomplete client email if present
     if (invoice.clientEmail) {
       setEmail(invoice.clientEmail);
     } else {
-      // Mock lookup based on standard names
       if (invoice.client?.includes("ABC")) {
         setEmail("owner@abcrestaurant.com");
       } else if (invoice.client?.includes("Pixel")) {
@@ -63,9 +60,14 @@ const StripeCheckoutModal = ({
         setEmail("accounting@client-entity.com");
       }
     }
+
+    setCardNumber("4242 4242 4242 4242");
+    setExpiry("12/28");
+    setCvc("123");
+    setName(invoice.client || "Jane Doe");
+    setZip("395003");
   }, [invoice]);
 
-  // Card brand detector
   const getCardBrand = (number) => {
     const cleanNumber = number.replace(/\s+/g, "");
     if (cleanNumber.startsWith("4")) return "Visa";
@@ -76,24 +78,6 @@ const StripeCheckoutModal = ({
   };
 
   const cardBrand = getCardBrand(cardNumber);
-
-  // Quick fill helper
-  const handleQuickFill = (type) => {
-    setName(type === "success" ? "Jane Doe" : type === "insufficient" ? "John Smith" : type === "stolen" ? "Bob Miller" : "Alice Green");
-    setCardNumber(
-      type === "success" 
-        ? "4242 4242 4242 4242" 
-        : type === "insufficient" 
-        ? "4000 0020 0000 0000" 
-        : type === "stolen" 
-        ? "4000 0002 0000 0000" 
-        : "4000 0001 0000 0000"
-    );
-    setExpiry(type === "expired" ? "01/24" : "12/28");
-    setCvc("123");
-    setZip("395003");
-    setErrorMessage("");
-  };
 
   const handlePaySubmit = (e) => {
     e.preventDefault();
@@ -113,12 +97,10 @@ const StripeCheckoutModal = ({
     setIsProcessing(true);
     setErrorMessage("");
 
-    // Simulate network delay
     setTimeout(() => {
       const cleanNum = cardNumber.replace(/\s+/g, "");
       
       if (cleanNum === "4242424242424242") {
-        // Success path
         setPaymentStatus("success");
         setIsProcessing(false);
         setTimeout(() => {
@@ -138,7 +120,6 @@ const StripeCheckoutModal = ({
           setName("");
         }, 3000);
       } else if (cleanNum === "4000002000000000") {
-        // Insufficient funds
         setPaymentStatus("error");
         setIsProcessing(false);
         setErrorMessage("Your card has insufficient funds. (Decline code: insufficient_funds)");
@@ -151,7 +132,6 @@ const StripeCheckoutModal = ({
           invoice: invoice.id
         });
       } else if (cleanNum === "4000000200000000") {
-        // Stolen Card
         setPaymentStatus("error");
         setIsProcessing(false);
         setErrorMessage("This card has been reported stolen. (Decline code: stolen_card)");
@@ -164,7 +144,6 @@ const StripeCheckoutModal = ({
           invoice: invoice.id
         });
       } else if (cleanNum === "4000000100000000" || expiry === "01/24") {
-        // Expired Card
         setPaymentStatus("error");
         setIsProcessing(false);
         setErrorMessage("Your card has expired. (Decline code: expired_card)");
@@ -177,7 +156,6 @@ const StripeCheckoutModal = ({
           invoice: invoice.id
         });
       } else {
-        // Generic success for other numbers to keep it user-friendly
         setPaymentStatus("success");
         setIsProcessing(false);
         setTimeout(() => {
@@ -204,7 +182,6 @@ const StripeCheckoutModal = ({
     <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-4xl rounded-3xl border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col md:flex-row relative min-h-[580px] animate-fade-in text-slate-700">
         
-        {/* Absolute close button */}
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 md:right-auto md:left-4 z-50 text-slate-400 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-full p-2.5 transition-all outline-none flex items-center justify-center cursor-pointer"
@@ -213,11 +190,9 @@ const StripeCheckoutModal = ({
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
         </button>
 
-        {/* LEFT COLUMN: Summary (Dark theme) */}
         <div className="w-full md:w-5/12 bg-slate-900 text-white p-8 flex flex-col justify-between border-r border-slate-800">
           <div className="mt-8 space-y-6">
             
-            {/* Merchant Identity */}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-extrabold text-xs">
                 BN
@@ -225,20 +200,17 @@ const StripeCheckoutModal = ({
               <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">BillNest Merchant Portal</span>
             </div>
 
-            {/* Invoicing summary details */}
             <div className="space-y-1.5">
               <span className="block text-[10px] font-black tracking-widest uppercase text-slate-400">Paying Invoiced Order</span>
               <h2 className="text-lg font-black text-slate-100">{invoice.id}</h2>
               <p className="text-xs text-slate-400 font-medium">Clearance of professional billing balance</p>
             </div>
 
-            {/* Huge Amount Visual */}
             <div className="py-4 border-y border-slate-800 flex flex-col gap-1">
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Amount Due</span>
               <h1 className="text-3xl font-black text-indigo-400">₹{invoice.amount.toLocaleString()}</h1>
             </div>
 
-            {/* Line items mini roster */}
             <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
               <span className="block text-[9px] font-black uppercase text-slate-500 tracking-wider">Services Purchased</span>
               {invoice.items && invoice.items.length > 0 ? (
@@ -265,21 +237,15 @@ const StripeCheckoutModal = ({
 
           </div>
 
-          {/* Secure details footer */}
           <div className="pt-6 border-t border-slate-800 flex items-center gap-2.5 text-[10px] text-slate-500 font-semibold mt-6">
             <span className="material-symbols-outlined text-[16px] text-indigo-400">lock</span>
             <span>Secure 256-bit SSL transaction verified by Stripe.</span>
           </div>
-
         </div>
 
-        {/* RIGHT COLUMN: Stripe Inputs */}
         <div className="w-full md:w-7/12 p-8 bg-white flex flex-col justify-between relative">
-          
-          {/* Main content body */}
-          <div className="my-auto space-y-6">
+         <div className="my-auto space-y-6">
             
-            {/* Heading */}
             <div className="flex justify-between items-center">
               <h3 className="font-heading text-lg font-black text-slate-900 tracking-tight">Pay with Card</h3>
               <div className="flex items-center gap-1">
@@ -288,45 +254,8 @@ const StripeCheckoutModal = ({
               </div>
             </div>
 
-            {/* Quick-fill shortcuts */}
-            <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-2">
-              <span className="block text-[9px] font-black uppercase text-indigo-600 tracking-wider">Simulated Cards Quick-Fill</span>
-              <div className="flex flex-wrap gap-2 pt-1 select-none">
-                <button 
-                  type="button" 
-                  onClick={() => handleQuickFill("success")}
-                  className="bg-white hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 text-[9px] font-black uppercase tracking-wider py-1.5 px-3 rounded-lg border border-slate-200 transition-all cursor-pointer"
-                >
-                  Success Card
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => handleQuickFill("insufficient")}
-                  className="bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-600 text-[9px] font-black uppercase tracking-wider py-1.5 px-3 rounded-lg border border-slate-200 transition-all cursor-pointer"
-                >
-                  Declined (Funds)
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => handleQuickFill("expired")}
-                  className="bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-600 text-[9px] font-black uppercase tracking-wider py-1.5 px-3 rounded-lg border border-slate-200 transition-all cursor-pointer"
-                >
-                  Declined (Expired)
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => handleQuickFill("stolen")}
-                  className="bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-600 text-[9px] font-black uppercase tracking-wider py-1.5 px-3 rounded-lg border border-slate-200 transition-all cursor-pointer"
-                >
-                  Declined (Stolen)
-                </button>
-              </div>
-            </div>
-
-            {/* Form */}
             <form onSubmit={handlePaySubmit} className="space-y-4 text-xs font-semibold">
               
-              {/* Email */}
               <div>
                 <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-1">Email address</label>
                 <input 
@@ -339,7 +268,6 @@ const StripeCheckoutModal = ({
                 />
               </div>
 
-              {/* Card Information */}
               <div>
                 <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-1">Card Information</label>
                 <div className="relative">
@@ -354,7 +282,6 @@ const StripeCheckoutModal = ({
                   />
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">credit_card</span>
                   
-                  {/* Brand badge */}
                   {cardBrand !== "Unknown" && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded uppercase select-none">
                       {cardBrand}
@@ -384,7 +311,6 @@ const StripeCheckoutModal = ({
                 </div>
               </div>
 
-              {/* Name on Card */}
               <div>
                 <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-1">Cardholder name</label>
                 <input 
@@ -397,7 +323,6 @@ const StripeCheckoutModal = ({
                 />
               </div>
 
-              {/* Postal Code */}
               <div>
                 <label className="block text-slate-400 text-[9px] font-black uppercase tracking-wider mb-1">Country & Postal Code</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -418,7 +343,6 @@ const StripeCheckoutModal = ({
                 </div>
               </div>
 
-              {/* Remember user checkbox */}
               <div className="flex items-center gap-2 select-none pt-1">
                 <input 
                   type="checkbox"
@@ -430,7 +354,6 @@ const StripeCheckoutModal = ({
                 <label htmlFor="remember-stripe" className="text-[10px] text-slate-400 font-bold uppercase cursor-pointer">Remember me for future transactions</label>
               </div>
 
-              {/* Error block */}
               {errorMessage && (
                 <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-[10px] font-bold leading-relaxed flex items-start gap-2 animate-shake">
                   <span className="material-symbols-outlined text-[16px] text-rose-500 mt-0.5">error_outline</span>
@@ -438,7 +361,6 @@ const StripeCheckoutModal = ({
                 </div>
               )}
 
-              {/* Submit button */}
               <button
                 type="submit"
                 disabled={isProcessing}
@@ -464,7 +386,6 @@ const StripeCheckoutModal = ({
 
           </div>
 
-          {/* Stripe branding footer */}
           <div className="text-[9px] text-slate-400 font-semibold text-center select-none pt-4 border-t border-slate-50 flex items-center justify-center gap-1.5 mt-4">
             <span>Powered by</span>
             <span className="font-extrabold text-slate-600">stripe</span>
@@ -474,7 +395,6 @@ const StripeCheckoutModal = ({
             <a href="#" className="hover:underline">Privacy</a>
           </div>
 
-          {/* ==================== SCREEN OVERLAY: SUCCESS ==================== */}
           {paymentStatus === "success" && (
             <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
               <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center text-emerald-500 shadow-md animate-bounce mb-6">

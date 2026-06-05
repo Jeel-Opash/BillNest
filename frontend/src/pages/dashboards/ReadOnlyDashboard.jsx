@@ -9,9 +9,9 @@ import ReadOnlyInvoicesTab from "./readonly/ReadOnlyInvoicesTab";
 import ReadOnlySubscriptionsTab from "./readonly/ReadOnlySubscriptionsTab";
 import ReadOnlyPaymentsTab from "./readonly/ReadOnlyPaymentsTab";
 import ReadOnlyReportsTab from "./readonly/ReadOnlyReportsTab";
-import ReadOnlyAuditTab from "./readonly/ReadOnlyAuditTab";
 import ReadOnlyNotificationsTab from "./readonly/ReadOnlyNotificationsTab";
 import ReadOnlyProfileTab from "./readonly/ReadOnlyProfileTab";
+import AIAssistant from "../../components/AIAssistant";
 
 const ReadOnlyDashboard = () => {
   const { user, logout, showToast } = useAuth();
@@ -72,10 +72,13 @@ const ReadOnlyDashboard = () => {
 
   const [payments, setPayments] = useState(() => {
     try {
-      const saved = localStorage.getItem(`workspace_${user?.email || "guest"}_payments`);
+      const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+      const saved = localStorage.getItem(`workspace_shared_payments_${orgKey}`);
       return saved ? JSON.parse(saved) : [
-        { id: "TXN-90241", invoice: "INV-1023", client: "Pixel Creative Labs", method: "Stripe Card", amount: 15000, status: "succeeded", date: "2026-05-20" },
-        { id: "TXN-90240", invoice: "INV-1022", client: "Nova Software Inc", method: "Stripe Card", amount: 5000, status: "failed", date: "2026-05-15" }
+        { id: "tx_1", client: "ABC Restaurant", amount: 9900, date: "2026-06-01", status: "successful", method: "Stripe Card" },
+        { id: "tx_2", client: "Pixel Studio", amount: 2900, date: "2026-05-28", status: "failed", method: "UPI Pay" },
+        { id: "tx_3", client: "Nova Software Inc", amount: 45000, date: "2026-05-25", status: "refunded", method: "Net Banking" },
+        { id: "tx_4", client: "Pixel Studio", amount: 15000, date: "2026-06-02", status: "pending", method: "Stripe Sandbox" }
       ];
     } catch {
       return [];
@@ -102,9 +105,8 @@ const ReadOnlyDashboard = () => {
   }, [invoices, user]);
 
   useEffect(() => {
-    if (user?.email) {
-      safeSaveToLocalStorage(`workspace_${user.email}_payments`, JSON.stringify(payments));
-    }
+    const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+    safeSaveToLocalStorage(`workspace_shared_payments_${orgKey}`, JSON.stringify(payments));
   }, [payments, user]);
 
   return (
@@ -146,7 +148,6 @@ const ReadOnlyDashboard = () => {
             { id: "subscriptions", label: "Subscription Viewer", symbol: "autorenew" },
             { id: "payments", label: "Payments Overview", symbol: "payments" },
             { id: "reports", label: "Reports & Analytics", symbol: "analytics" },
-            { id: "audit", label: "Audit Logs Viewer", symbol: "assignment" },
             { id: "notifications", label: `Notification Center (${notifications.filter(n => !n.read).length})`, symbol: "notifications" },
             { id: "profile", label: "Profile Settings", symbol: "person" }
           ].map((menu) => {
@@ -334,6 +335,7 @@ const ReadOnlyDashboard = () => {
             <ReadOnlyPaymentsTab
               payments={payments}
               user={user}
+              invoices={invoices}
             />
           )}
 
@@ -344,10 +346,6 @@ const ReadOnlyDashboard = () => {
               user={user}
               showToast={showToast}
             />
-          )}
-
-          {activePage === "audit" && (
-            <ReadOnlyAuditTab />
           )}
 
           {activePage === "notifications" && (
@@ -367,6 +365,14 @@ const ReadOnlyDashboard = () => {
 
         </div>
       </main>
+
+      <AIAssistant
+        user={user}
+        clients={clients}
+        invoices={invoices}
+        payments={payments}
+        showToast={showToast}
+      />
 
     </div>
   );

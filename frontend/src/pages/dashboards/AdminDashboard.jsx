@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-
+import AIAssistant from "../../components/AIAssistant";
 
 import AdminDashboardTab from "./admin/AdminDashboardTab";
 import AdminClientsTab from "./admin/AdminClientsTab";
@@ -11,8 +11,6 @@ import AdminSubscriptionsTab from "./admin/AdminSubscriptionsTab";
 import AdminPaymentsTab from "./admin/AdminPaymentsTab";
 import AdminTeamTab from "./admin/AdminTeamTab";
 import AdminReportsTab from "./admin/AdminReportsTab";
-import AdminAuditTab from "./admin/AdminAuditTab";
-import AdminSettingsTab from "./admin/AdminSettingsTab";
 import AdminNotificationsTab from "./admin/AdminNotificationsTab";
 import AdminProfileTab from "./admin/AdminProfileTab";
 
@@ -68,6 +66,26 @@ const AdminDashboard = () => {
     { id: "n2", type: "payment_failed", title: "Payment Dispatch Failure", message: "Nova Software Inc failed card payment retry scheduled.", time: "1 day ago", read: false }
   ]);
 
+  const [payments, setPayments] = useState(() => {
+    try {
+      const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+      const saved = localStorage.getItem(`workspace_shared_payments_${orgKey}`);
+      return saved ? JSON.parse(saved) : [
+        { id: "tx_1", client: "ABC Restaurant", amount: 9900, date: "2026-06-01", status: "successful", method: "Stripe Card" },
+        { id: "tx_2", client: "Pixel Studio", amount: 2900, date: "2026-05-28", status: "failed", method: "UPI Pay" },
+        { id: "tx_3", client: "Nova Software Inc", amount: 45000, date: "2026-05-25", status: "refund_requested", method: "Net Banking" },
+        { id: "tx_4", client: "Pixel Studio", amount: 15000, date: "2026-06-02", status: "pending", method: "Stripe Sandbox" }
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+    localStorage.setItem(`workspace_shared_payments_${orgKey}`, JSON.stringify(payments));
+  }, [payments, user]);
+
   useEffect(() => {
     if (user?.email) {
       localStorage.setItem(`workspace_${user.email}_team_list`, JSON.stringify(teamList));
@@ -108,6 +126,23 @@ const AdminDashboard = () => {
     }
   }, [user]);
 
+  const handleCreateDraftInvoice = (clientName, amount) => {
+    const nextId = `INV-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newInv = {
+      id: nextId,
+      client: clientName,
+      amount: Number(amount),
+      date: new Date().toISOString().split("T")[0],
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      status: "draft",
+      itemsList: [{ desc: "AI Copilot Created Billing Line", qty: 1, price: Number(amount) }]
+    };
+    const updated = [newInv, ...invoices];
+    setInvoices(updated);
+    showToast(`Invoice draft ${nextId} created for ${clientName}!`, "success");
+    navigate("/dashboard/invoices");
+  };
+
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
 
@@ -147,8 +182,6 @@ const AdminDashboard = () => {
             { id: "payments", label: "Payments", symbol: "payments" },
             { id: "team", label: "Team Members", symbol: "badge" },
             { id: "reports", label: "Reports", symbol: "analytics" },
-            { id: "audit", label: "Audit Logs", symbol: "terminal" },
-            { id: "settings", label: "Settings & API Keys", symbol: "settings" },
             { id: "notifications", label: `Notifications (${notifications.filter(n => !n.read).length})`, symbol: "notifications" },
             { id: "profile", label: "Profile Settings", symbol: "person" }
           ].map((menu) => {
@@ -325,13 +358,20 @@ const AdminDashboard = () => {
 
           {activePage === "subscriptions" && (
             <AdminSubscriptionsTab
+              user={user}
               clients={clients}
+              payments={payments}
+              setPayments={setPayments}
               showToast={showToast}
             />
           )}
 
           {activePage === "payments" && (
             <AdminPaymentsTab
+              payments={payments}
+              setPayments={setPayments}
+              user={user}
+              invoices={invoices}
               showToast={showToast}
             />
           )}
@@ -355,21 +395,7 @@ const AdminDashboard = () => {
             />
           )}
 
-          {activePage === "audit" && (
-            <AdminAuditTab
-              clients={clients}
-              invoices={invoices}
-              teamList={teamList}
-              showToast={showToast}
-            />
-          )}
 
-          {activePage === "settings" && (
-            <AdminSettingsTab
-              user={user}
-              showToast={showToast}
-            />
-          )}
 
           {activePage === "notifications" && (
             <AdminNotificationsTab
@@ -388,6 +414,15 @@ const AdminDashboard = () => {
 
         </div>
       </main>
+
+      <AIAssistant
+        user={user}
+        clients={clients}
+        invoices={invoices}
+        payments={payments}
+        onCreateDraftInvoice={handleCreateDraftInvoice}
+        showToast={showToast}
+      />
 
     </div>
   );

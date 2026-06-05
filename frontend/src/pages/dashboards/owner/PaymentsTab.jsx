@@ -156,6 +156,26 @@ const PaymentsTab = ({
         </p>
       </div>
 
+      {/* Role Context Explainer Banner */}
+      <div className="p-4 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100 rounded-3xl flex items-start gap-3 shadow-[0_1px_3px_rgba(0,0,0,0.01)] select-none animate-fade-in">
+        <div className="w-8 h-8 rounded-xl bg-violet-600/10 text-violet-750 flex items-center justify-center flex-shrink-0 font-bold">
+          <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-violet-600 text-white leading-none">
+              Owner Console
+            </span>
+            <h5 className="font-heading text-xs font-black text-slate-800 uppercase tracking-wide">
+              B2B Merchant Clearance Ledger
+            </h5>
+          </div>
+          <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-1">
+            You are operating in the <strong>Owner</strong> context. Transactions below reflect standard B2B client payments routed from the <strong>Payer (Client Partner)</strong> to your designated corporate merchant wallet <strong>Receiver ({user?.organization?.name || "Workspace Owner"})</strong>. As the owner, you retain absolute authority to reverse clearances and process instant partial or full refunds.
+          </p>
+        </div>
+      </div>
+
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
@@ -241,7 +261,8 @@ const PaymentsTab = ({
               <thead>
                 <tr className="text-[10px] font-black uppercase text-slate-400 bg-slate-50/50 border-b border-slate-100">
                   <th className="p-3 pl-4">Transaction ID</th>
-                  <th className="p-3">Client Partner</th>
+                  <th className="p-3">Payer (Client)</th>
+                  <th className="p-3">Receiver (Workspace)</th>
                   <th className="p-3">Reference invoice</th>
                   <th className="p-3">Payment Method</th>
                   <th className="p-3">Date</th>
@@ -253,15 +274,32 @@ const PaymentsTab = ({
               <tbody className="divide-y divide-slate-50 text-xs font-semibold text-slate-700">
                 {filteredPayments.length > 0 ? (
                   filteredPayments.map((p, idx) => {
-                    const isSucceeded = p.status?.toLowerCase() === "succeeded";
+                    const isSucceeded = p.status?.toLowerCase() === "succeeded" || p.status?.toLowerCase() === "successful";
                     const isFailed = p.status?.toLowerCase() === "failed";
                     const isRefunded = p.status?.toLowerCase() === "refunded";
 
                     return (
                       <tr key={p.id || idx} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-3 pl-4 font-mono font-bold text-slate-900">{p.id}</td>
-                        <td className="p-3 font-bold text-slate-800">{p.client}</td>
-                        <td className="p-3 font-mono font-bold text-indigo-600 hover:underline cursor-pointer">{p.invoice}</td>
+                        <td className="p-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px] text-indigo-500">upload_file</span>
+                              {p.client}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Payer (Outflow)</span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px] text-emerald-500">download_for_offline</span>
+                              {user?.organization?.name || "CodeCraft Agency"}
+                            </span>
+                            <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Receiver (Inflow)</span>
+                          </div>
+                        </td>
+                        <td className="p-3 font-mono font-bold text-indigo-600 hover:underline cursor-pointer">{p.invoice || "N/A"}</td>
                         <td className="p-3 text-slate-500 flex items-center gap-1 mt-1">
                           <span className="material-symbols-outlined text-[15px] text-slate-400">credit_card</span>
                           {p.method || "Stripe Card"}
@@ -307,7 +345,7 @@ const PaymentsTab = ({
                   })
                 ) : (
                   <tr>
-                    <td colSpan="8" className="p-12 text-center text-slate-400 font-semibold italic border-2 border-dashed border-slate-50 rounded-2xl">
+                    <td colSpan="9" className="p-12 text-center text-slate-400 font-semibold italic border-2 border-dashed border-slate-50 rounded-2xl">
                       No transaction records match the active segment criteria.
                     </td>
                   </tr>

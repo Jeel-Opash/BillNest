@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import StripeCheckoutModal from "../../../components/StripeCheckoutModal";
 
 const formatCurrency = (val, currency = "INR") => {
   return new Intl.NumberFormat(currency === "USD" ? "en-US" : currency === "EUR" ? "en-DE" : "en-IN", {
@@ -15,6 +16,7 @@ const SubscriptionsTab = ({
   setSubscriptions,
   invoices = [],
   payments = [],
+  setPayments,
   showToast
 }) => {
 
@@ -83,6 +85,9 @@ const SubscriptionsTab = ({
 
 
 
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [checkoutInvoice, setCheckoutInvoice] = useState(null);
+
   const handleCreatePlanSubmit = (e) => {
     e.preventDefault();
     if (!createName.trim()) {
@@ -90,6 +95,21 @@ const SubscriptionsTab = ({
       return;
     }
 
+    const clientCompany = createClient || (clients[0]?.company || "ABC Restaurant");
+    const clientEmail = clients.find(c => c.company === clientCompany)?.email || "billing@client.com";
+
+    const mockInv = {
+      id: `SUB-PAY-${Date.now()}`,
+      amount: createPrice,
+      client: clientCompany,
+      clientEmail: clientEmail,
+      items: [{ desc: `${createName} (${createTier})`, qty: 1, price: createPrice }]
+    };
+    setCheckoutInvoice(mockInv);
+    setIsCheckoutOpen(true);
+  };
+
+  const handleCheckoutSuccess = (txn) => {
     const newSub = {
       id: `s_${Date.now()}`,
       name: createName,
@@ -103,9 +123,29 @@ const SubscriptionsTab = ({
     };
 
     setSubscriptions([...subscriptions, newSub]);
-    showToast(`Recurring Plan "${createName}" activated for ${newSub.client}!`, "success");
-    
 
+    const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+    const existingPayments = JSON.parse(localStorage.getItem(`workspace_shared_payments_${orgKey}`) || "[]");
+    
+    const newPayment = {
+      id: txn.txnId || `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      invoice: txn.invoice || `SUB-PAY-${Date.now()}`,
+      client: newSub.client,
+      method: txn.method || "Stripe Card",
+      amount: createPrice,
+      status: "succeeded",
+      date: txn.date || new Date().toISOString().split("T")[0]
+    };
+
+    const updatedPayments = [newPayment, ...existingPayments];
+    localStorage.setItem(`workspace_shared_payments_${orgKey}`, JSON.stringify(updatedPayments));
+
+    if (setPayments) {
+      setPayments(updatedPayments);
+    }
+
+    showToast(`Recurring Plan "${createName}" activated and payment of ₹${createPrice.toLocaleString()} processed via Stripe!`, "success");
+    
     setCreateName("");
     setCreateTier("starter");
     setCreatePrice(5000);
@@ -113,6 +153,7 @@ const SubscriptionsTab = ({
     setCreateTrial(0);
     setCreateLogo("");
     setCreatingPlan(false);
+    setIsCheckoutOpen(false);
   };
 
 
@@ -856,6 +897,15 @@ const SubscriptionsTab = ({
         </div>
       )}
 
+      {isCheckoutOpen && checkoutInvoice && (
+        <StripeCheckoutModal
+          isOpen={isCheckoutOpen}
+          onClose={() => setIsCheckoutOpen(false)}
+          onSuccess={handleCheckoutSuccess}
+          onFailure={() => showToast("Subscription payment verification failed.", "error")}
+          invoice={checkoutInvoice}
+        />
+      )}
     </div>
   );
 };

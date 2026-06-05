@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -11,6 +11,7 @@ import MemberPaymentsTab from "./member/MemberPaymentsTab";
 import MemberActivityTab from "./member/MemberActivityTab";
 import MemberNotificationsTab from "./member/MemberNotificationsTab";
 import MemberProfileTab from "./member/MemberProfileTab";
+import AIAssistant from "../../components/AIAssistant";
 
 const MemberDashboard = () => {
   const { user, logout, showToast } = useAuth();
@@ -48,11 +49,48 @@ const MemberDashboard = () => {
     { id: "INV-MEMB-1003", client: "Nova Software Inc", amount: 8000, date: "2026-05-25", dueDate: "2026-06-05", status: "paid", itemsList: [{ desc: "Technical Support Support", qty: 8, price: 1000 }] }
   ]);
 
+  const [payments, setPayments] = useState(() => {
+    try {
+      const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+      const saved = localStorage.getItem(`workspace_shared_payments_${orgKey}`);
+      return saved ? JSON.parse(saved) : [
+        { id: "tx_1", client: "ABC Restaurant", amount: 9900, date: "2026-06-01", status: "successful", method: "Stripe Card" },
+        { id: "tx_2", client: "Pixel Studio", amount: 2900, date: "2026-05-28", status: "failed", method: "UPI Pay" },
+        { id: "tx_3", client: "Nova Software Inc", amount: 45000, date: "2026-05-25", status: "refunded", method: "Net Banking" },
+        { id: "tx_4", client: "Pixel Studio", amount: 15000, date: "2026-06-02", status: "pending", method: "Stripe Sandbox" }
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+    localStorage.setItem(`workspace_shared_payments_${orgKey}`, JSON.stringify(payments));
+  }, [payments, user]);
+
   const [notifications, setNotifications] = useState([
     { id: "n1", type: "client_update", title: "Client Update", message: "ABC Restaurant viewed Invoice INV-MEMB-1001.", time: "10 mins ago", read: false },
     { id: "n2", type: "payment_success", title: "Payment Success", message: "Invoice INV-MEMB-1003 was marked as paid.", time: "2 hours ago", read: false },
     { id: "n3", type: "subscription_renewal", title: "Subscription Renewed", message: "Nova Software Inc payment processed successfully.", time: "1 day ago", read: true }
   ]);
+
+  const handleCreateDraftInvoice = (clientName, amount) => {
+    const nextId = `INV-MEMB-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newInv = {
+      id: nextId,
+      client: clientName,
+      amount: Number(amount),
+      date: new Date().toISOString().split("T")[0],
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      status: "draft",
+      itemsList: [{ desc: "AI Copilot Created Billing Line", qty: 1, price: Number(amount) }]
+    };
+    const updated = [newInv, ...invoices];
+    setInvoices(updated);
+    showToast(`Invoice draft ${nextId} created for ${clientName}!`, "success");
+    navigate("/dashboard/invoices");
+  };
 
   return (
     <div className="flex bg-[#f8fafc] min-h-screen text-slate-700 font-sans antialiased">
@@ -274,13 +312,20 @@ const MemberDashboard = () => {
 
           {activePage === "subscriptions" && (
             <MemberSubscriptionsTab
+              user={user}
               clients={clients}
+              payments={payments}
+              setPayments={setPayments}
               showToast={showToast}
             />
           )}
 
           {activePage === "payments" && (
-            <MemberPaymentsTab />
+            <MemberPaymentsTab 
+              payments={payments} 
+              user={user}
+              invoices={invoices}
+            />
           )}
 
           {activePage === "activity" && (
@@ -304,6 +349,15 @@ const MemberDashboard = () => {
 
         </div>
       </main>
+
+      <AIAssistant
+        user={user}
+        clients={clients}
+        invoices={invoices}
+        payments={payments}
+        onCreateDraftInvoice={handleCreateDraftInvoice}
+        showToast={showToast}
+      />
 
     </div>
   );

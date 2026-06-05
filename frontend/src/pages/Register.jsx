@@ -188,101 +188,11 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex font-sans antialiased text-slate-700">
 
-      {/* ── LEFT PANEL ── */}
-      <div className="hidden lg:flex w-[420px] flex-shrink-0 flex-col bg-white border-r border-slate-100 p-10 relative overflow-hidden">
-
-        <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
-        <div className="absolute -bottom-24 -right-16 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-40 pointer-events-none" />
-
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 z-10 mb-12">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">BN</div>
-          <div className="flex flex-col min-w-0">
-            <h1 className="font-bold text-lg text-slate-900 tracking-tight leading-none">BillNest</h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Enterprise Plan</p>
-          </div>
-        </div>
-
-        <div className="z-10 flex-1 flex flex-col justify-center gap-8">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
-              <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
-              3-Step Onboarding
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
-              Launch your workspace in minutes.
-            </h2>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Register a profile, provision your organisation, and deploy a live sandbox — all before your first coffee.
-            </p>
-          </div>
-
-          {/* Onboarding checklist — matches owner card style exactly */}
-          <div className="bg-white border border-slate-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-50 flex justify-between items-center">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Workspace Setup</p>
-              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg">Step 1 of 3</span>
-            </div>
-            <div className="p-4 space-y-2">
-              {[
-                {
-                  icon: "person",
-                  label: "Configure user credentials",
-                  sub: "Name, email, password & avatar",
-                  active: true,
-                  done: false
-                },
-                {
-                  icon: "dns",
-                  label: "Provision organisation tenant",
-                  sub: "Isolated DB for clients & plans",
-                  active: false,
-                  done: false
-                },
-                {
-                  icon: "receipt_long",
-                  label: "Launch sandbox invoices",
-                  sub: "Seed mock data & run webhooks",
-                  active: false,
-                  done: false
-                },
-              ].map(({ icon, label, sub, active, done }, i) => (
-                <div key={i} className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${active ? "bg-indigo-50 border border-indigo-100" : "bg-slate-50 border border-transparent"}`}>
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${done ? "bg-emerald-100 border border-emerald-200" : active ? "bg-indigo-100 border border-indigo-200" : "bg-slate-100 border border-slate-200"}`}>
-                    <span className={`material-symbols-outlined text-[14px] ${done ? "text-emerald-600" : active ? "text-indigo-600" : "text-slate-400"}`} style={{ fontVariationSettings: done ? "'FILL' 1" : "" }}>
-                      {done ? "check_circle" : icon}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-bold ${active ? "text-indigo-700" : "text-slate-500"}`}>{label}</p>
-                    <p className={`text-[10px] mt-0.5 ${active ? "text-indigo-500" : "text-slate-400"}`}>{sub}</p>
-                  </div>
-                  {active && (
-                    <span className="text-[9px] font-extrabold text-indigo-600 uppercase tracking-wider bg-indigo-100 px-2 py-0.5 rounded flex-shrink-0">Active</span>
-                  )}
-                  {!active && (
-                    <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Locked</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="z-10 pt-6 border-t border-slate-100 flex justify-between text-[10px] text-slate-400 font-semibold">
-          <span>© 2026 BillNest</span>
-          <div className="flex gap-3">
-            <span className="hover:text-indigo-600 cursor-pointer transition-colors">Privacy</span>
-            <span className="hover:text-indigo-600 cursor-pointer transition-colors">Terms</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── RIGHT PANEL: Form ── */}
+      {/* ── FORM PANEL ── */}
       <div className="flex-1 flex items-start justify-center p-6 sm:p-12 overflow-y-auto">
 
-        {/* Mobile logo */}
-        <div className="lg:hidden absolute top-6 left-6 flex items-center gap-2">
+        {/* Logo */}
+        <div className="absolute top-6 left-6 flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md">BN</div>
           <span className="font-bold text-slate-900 text-sm tracking-tight">BillNest</span>
         </div>

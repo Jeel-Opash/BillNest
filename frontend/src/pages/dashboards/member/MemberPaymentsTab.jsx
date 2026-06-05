@@ -1,31 +1,35 @@
 import React, { useState } from "react";
 
-const MemberPaymentsTab = () => {
-  const [payments] = useState([
-    { id: "tx_1", client: "ABC Restaurant", amount: 9900, date: "2026-06-01", status: "successful", method: "Stripe Card" },
-    { id: "tx_2", client: "Pixel Studio", amount: 2900, date: "2026-05-28", status: "failed", method: "UPI Pay" },
-    { id: "tx_3", client: "Nova Software Inc", amount: 45000, date: "2026-05-25", status: "refunded", method: "Net Banking" },
-    { id: "tx_4", client: "Pixel Studio", amount: 15000, date: "2026-06-02", status: "pending", method: "Stripe Sandbox" }
-  ]);
-
+const MemberPaymentsTab = ({ payments = [], user, invoices = [] }) => {
   const [activeTab, setActiveTab] = useState("all");
 
   const filteredPayments = payments.filter(p => {
+    const statusLower = p.status?.toLowerCase();
     if (activeTab === "all") return true;
-    if (activeTab === "failed") return p.status === "failed";
-    return p.status === activeTab;
+    if (activeTab === "failed") return statusLower === "failed";
+    if (activeTab === "successful") return statusLower === "successful" || statusLower === "succeeded";
+    return statusLower === activeTab;
   });
 
   return (
     <div className="space-y-6">
 
-      {/* Safeguard banner */}
-      <div className="p-4 bg-slate-50 border border-slate-200 rounded-3xl flex items-start gap-3 select-none">
-        <span className="material-symbols-outlined text-[20px] text-slate-500 mt-0.5">lock_outline</span>
-        <div>
-          <h5 className="font-heading text-xs font-black text-slate-700 uppercase tracking-wide">Financial Ledger Guard</h5>
-          <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-0.5">
-            You are operating in a **Member** workspace context. Members have view-only rights to monitor successful or failed Stripe payments. Processing refunds or adjusting transaction configurations is locked.
+      {/* Role Context Explainer Banner */}
+      <div className="p-4 bg-gradient-to-r from-slate-50 to-indigo-50/20 border border-slate-200 rounded-3xl flex items-start gap-3 shadow-[0_1px_3px_rgba(0,0,0,0.01)] select-none animate-fade-in">
+        <div className="w-8 h-8 rounded-xl bg-slate-600/10 text-slate-750 flex items-center justify-center flex-shrink-0 font-bold">
+          <span className="material-symbols-outlined text-[18px]">lock_outline</span>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-600 text-white leading-none">
+              Member Console
+            </span>
+            <h5 className="font-heading text-xs font-black text-slate-700 uppercase tracking-wide">
+              Financial Ledger Guard
+            </h5>
+          </div>
+          <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-1">
+            You are operating in the <strong>Member</strong> context. Transactions below reflect standard B2B client payments routed from the <strong>Payer (Client Target)</strong> to the <strong>Receiver ({user?.organization?.name || "Workspace Organization"})</strong>. You have view-only access to monitor active payments; processing refunds or adjusting gateway configurations remains restricted to owners and admins.
           </p>
         </div>
       </div>
@@ -67,7 +71,8 @@ const MemberPaymentsTab = () => {
             <thead>
               <tr className="border-b border-slate-100">
                 <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Transaction ID</th>
-                <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Client Target</th>
+                <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Payer (Client)</th>
+                <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Receiver (Workspace)</th>
                 <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Gateway Method</th>
                 <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Stamp Date</th>
                 <th className="py-3 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Amount</th>
@@ -78,7 +83,7 @@ const MemberPaymentsTab = () => {
             <tbody className="divide-y divide-slate-50">
               {filteredPayments.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-400">
+                  <td colSpan="8" className="py-8 text-center text-slate-400">
                     No matching traces registered under the selected segment.
                   </td>
                 </tr>
@@ -86,15 +91,32 @@ const MemberPaymentsTab = () => {
                 filteredPayments.map(p => (
                   <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="py-3.5 font-bold text-slate-900">{p.id}</td>
-                    <td className="py-3.5 text-slate-800">{p.client}</td>
+                    <td className="py-3.5">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px] text-indigo-500">upload_file</span>
+                          {p.client}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Payer (Outflow)</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px] text-emerald-500">download_for_offline</span>
+                          {user?.organization?.name || "CodeCraft Agency"}
+                        </span>
+                        <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Receiver (Inflow)</span>
+                      </div>
+                    </td>
                     <td className="py-3.5 text-slate-500 font-bold uppercase tracking-wider text-[9px]">{p.method}</td>
                     <td className="py-3.5 text-slate-400">{p.date}</td>
                     <td className="py-3.5 font-black text-slate-900">₹{p.amount.toLocaleString()}</td>
                     <td className="py-3.5">
                       <span className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border ${
-                        p.status === "successful"
+                        p.status?.toLowerCase() === "successful" || p.status?.toLowerCase() === "succeeded"
                           ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                          : p.status === "failed"
+                          : p.status?.toLowerCase() === "failed"
                           ? "bg-rose-50 text-rose-700 border-rose-100 animate-pulse"
                           : "bg-slate-50 text-slate-600 border-slate-200"
                       }`}>{p.status}</span>

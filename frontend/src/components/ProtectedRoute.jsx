@@ -11,8 +11,7 @@ const LoadingScreen = () => (
       <span className="font-bold text-lg text-slate-900 tracking-tight">BillNest</span>
     </div>
 
-    {/* Skeleton sidebar + content */}
-    <div className="flex gap-4 w-full max-w-4xl px-6">
+   <div className="flex gap-4 w-full max-w-4xl px-6">
       <div className="w-48 flex flex-col gap-3 flex-shrink-0">
         <div className="h-8 bg-slate-200 rounded-xl animate-pulse"></div>
         {[...Array(6)].map((_, i) => (

@@ -1,7 +1,11 @@
 import React, { useState } from "react";
+import StripeCheckoutModal from "../../../components/StripeCheckoutModal";
 
 const AdminSubscriptionsTab = ({
+  user,
   clients,
+  payments = [],
+  setPayments,
   showToast
 }) => {
 
@@ -17,10 +21,28 @@ const AdminSubscriptionsTab = ({
     { id: "sub_2", client: "Pixel Studio", plan: "Starter Tier", price: 2900, cycle: "monthly", renewalDate: "2026-06-25", status: "paused" }
   ]);
 
-
   const [targetClient, setTargetClient] = useState(clients[0]?.company || "");
   const [selectedPlan, setSelectedPlan] = useState(plans[0]);
   const [customRenewal, setCustomRenewal] = useState(new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]);
+
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [checkoutInvoice, setCheckoutInvoice] = useState(null);
+
+  const handlePlanSelectClick = (plan) => {
+    setSelectedPlan(plan);
+    const clientName = targetClient || (clients[0]?.company || "ABC Restaurant");
+    const clientEmail = clients.find(c => c.company === clientName)?.email || "billing@client.com";
+    
+    const mockInv = {
+      id: `SUB-PAY-${Date.now()}`,
+      amount: plan.price,
+      client: clientName,
+      clientEmail: clientEmail,
+      items: [{ desc: `${plan.name} Subscription`, qty: 1, price: plan.price }]
+    };
+    setCheckoutInvoice(mockInv);
+    setIsCheckoutOpen(true);
+  };
 
   const handleCreateSubscription = (e) => {
     e.preventDefault();
@@ -29,24 +51,58 @@ const AdminSubscriptionsTab = ({
       return;
     }
 
-
     if (subscriptions.some(s => s.client === targetClient && s.status !== "cancelled")) {
       showToast(`Client ${targetClient} already has an active subscription plan.`, "warning");
       return;
     }
 
+    const clientEmail = clients.find(c => c.company === targetClient)?.email || "billing@client.com";
+    
+    const mockInv = {
+      id: `SUB-PAY-${Date.now()}`,
+      amount: selectedPlan.price,
+      client: targetClient,
+      clientEmail: clientEmail,
+      items: [{ desc: `${selectedPlan.name} Subscription`, qty: 1, price: selectedPlan.price }]
+    };
+    setCheckoutInvoice(mockInv);
+    setIsCheckoutOpen(true);
+  };
+
+  const handleCheckoutSuccess = (txn) => {
     const newSub = {
       id: `sub_${Date.now()}`,
-      client: targetClient,
+      client: txn.client || targetClient || "ABC Restaurant",
       plan: selectedPlan.name,
       price: selectedPlan.price,
       cycle: selectedPlan.cycle,
       renewalDate: customRenewal,
       status: "active"
     };
-
     setSubscriptions([newSub, ...subscriptions]);
-    showToast(`Assigned ${selectedPlan.name} to ${targetClient}!`, "success");
+
+    const orgKey = user?.organization?.name?.toLowerCase().replace(/[^a-z0-9]/g, "_") || "guest";
+    const existingPayments = JSON.parse(localStorage.getItem(`workspace_shared_payments_${orgKey}`) || "[]");
+    
+    const newPayment = {
+      id: txn.txnId || `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      invoice: txn.invoice || `SUB-PAY-${Date.now()}`,
+      client: txn.client || targetClient || "ABC Restaurant",
+      method: txn.method || "Stripe Card",
+      amount: txn.amount || selectedPlan.price,
+      status: "successful",
+      date: txn.date || new Date().toISOString().split("T")[0]
+    };
+
+    const updatedPayments = [newPayment, ...existingPayments];
+    localStorage.setItem(`workspace_shared_payments_${orgKey}`, JSON.stringify(updatedPayments));
+
+    if (setPayments) {
+      setPayments(updatedPayments);
+    }
+
+    showToast(`Subscription assigned & payment of ₹${selectedPlan.price.toLocaleString()} succeeded via Stripe!`, "success");
+    setIsCheckoutOpen(false);
   };
 
   const handlePause = (id) => {
@@ -95,10 +151,7 @@ const AdminSubscriptionsTab = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedPlan(p);
-                    showToast(`Selected "${p.name}" pricing context.`, "info");
-                  }}
+                  onClick={() => handlePlanSelectClick(p)}
                   className={`w-full py-1.5 rounded-xl text-[10px] font-black uppercase transition-all cursor-pointer ${
                     selectedPlan.name === p.name
                       ? "bg-indigo-600 text-white shadow-sm"
@@ -226,6 +279,15 @@ const AdminSubscriptionsTab = ({
         </form>
       </div>
 
+      {isCheckoutOpen && checkoutInvoice && (
+        <StripeCheckoutModal
+          isOpen={isCheckoutOpen}
+          onClose={() => setIsCheckoutOpen(false)}
+          onSuccess={handleCheckoutSuccess}
+          onFailure={() => showToast("Subscription payment verification failed.", "error")}
+          invoice={checkoutInvoice}
+        />
+      )}
     </div>
   );
 };
